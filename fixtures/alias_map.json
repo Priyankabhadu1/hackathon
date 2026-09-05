@@ -1,26 +1,30 @@
 {
+  "offer_list": [
+    "data"
+  ],
   "error_list": [
     "errors"
   ],
+  "offer.total": [
+    "price.grandTotal",
+    "offers[].price.total"
+  ],
   "offer.base": [
-    "price.base"
+    "price.base",
+    "offers[].price.base"
   ],
   "offer.currency": [
-    "price.currency"
+    "price.currency",
+    "offers[].price.currency"
+  ],
+  "offer.taxes": [
+    "travelerPricings[].price.taxes[].amount",
+    "offers[].price.taxes[].amount"
   ],
   "offer.fees": [
     "price.fees[].amount"
   ],
   "offer.segments": [
     "itineraries[].segments"
-  ],
-  "offer.taxes": [
-    "price.taxes[].amount"
-  ],
-  "offer.total": [
-    "price.total"
-  ],
-  "offer_list": [
-    "data"
   ]
 }

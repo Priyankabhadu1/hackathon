@@ -57,7 +57,7 @@ def run_probe(probe: Dict[str, Any], client: mcp_client.Client, store: Dict[str,
         return
 
     alias_map = assertions.load_alias_map()
-    results = assertions.run(probe.get("assertions", []), response, alias_map)
+    results = assertions.run(probe.get("assertions", []), response, alias_map, probe)
 
     current = fingerprint.fingerprint(response)
     previous = entry.get("fingerprint")
@@ -92,7 +92,7 @@ def run_probe(probe: Dict[str, Any], client: mcp_client.Client, store: Dict[str,
 
         if outcome == "applied":
             alias_map = assertions.load_alias_map()
-            results = assertions.run(probe.get("assertions", []), response, alias_map)
+            results = assertions.run(probe.get("assertions", []), response, alias_map, probe)
             signature = failure_signature(results)
 
     for result in results:

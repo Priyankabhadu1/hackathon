@@ -31,8 +31,11 @@ Runs offline out of the box: `replay` mode serves fixtures, and with no `ANTHROP
 judge falls back to a rule-based classifier labelled `heuristic-fallback` in the logs. Add the key
 for real judgments, add Amadeus credentials and `PROBE_MODE=live` for real traffic.
 
+Then, in a second terminal, `python -m ui.server`.
+
 | Service | URL |
 |---|---|
+| Console | http://localhost:8090 |
 | Grafana | http://localhost:3000 (admin/admin) |
 | Prometheus | http://localhost:9090 |
 | Runner metrics | http://localhost:8000/metrics |
@@ -71,6 +74,14 @@ number that lands in Prometheus.** Drift score is a lookup on a classification e
 | [docs/METRICS.md](docs/METRICS.md) | Adding any metric or log line — the contract |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | When tempted to revisit a settled trade-off |
 | [CHANGELOG.md](CHANGELOG.md) | Every change, one line |
+
+The console has five views — overview, pipeline, simulator, delivery, event feed. It shows what each
+stage last did, drives the drift fixtures from buttons, steps one probe cycle stage by stage in a
+sandbox, and reports DORA's four metrics against the API under test rather than our own pipeline.
+Grafana keeps the long-range time series. See D12, D15, D16.
+
+Loki has no web UI of its own — `http://localhost:3100` returns 404 by design. Read its logs through
+Grafana Explore.
 
 Skills in `.claude/skills/`: `probe-authoring`. The other three named in `CLAUDE.md`
 (`semantic-drift-judge`, `observability-wiring`, `release-verdict`) are not written yet.

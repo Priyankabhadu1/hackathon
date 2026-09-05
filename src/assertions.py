@@ -13,6 +13,7 @@ from src.paths import resolve
 # healing safe: the healer may remap a path, never an intent.
 
 Result = Tuple[bool, str]
+Probe = Dict[str, Any]
 
 _CURRENCY = re.compile(r"^[A-Z]{3}$")
 
@@ -53,12 +54,12 @@ def _number(value: Any):
         return None
 
 
-def offers_present(response, alias_map) -> Result:
+def offers_present(response, alias_map, probe) -> Result:
     offers = _offers(response, alias_map)
     return (bool(offers), f"{len(offers)} offers")
 
 
-def every_offer_has_total_price(response, alias_map) -> Result:
+def every_offer_has_total_price(response, alias_map, probe) -> Result:
     offers = _offers(response, alias_map)
     if not offers:
         return False, "no offers to check"
@@ -69,7 +70,7 @@ def every_offer_has_total_price(response, alias_map) -> Result:
     return True, f"{len(offers)} offers priced"
 
 
-def currency_is_iso4217(response, alias_map) -> Result:
+def currency_is_iso4217(response, alias_map, probe) -> Result:
     offers = _offers(response, alias_map)
     for index, offer in enumerate(offers):
         values = lookup(alias_map, "offer.currency", offer)
@@ -80,7 +81,7 @@ def currency_is_iso4217(response, alias_map) -> Result:
     return True, "all currencies well formed"
 
 
-def price_components_sum(response, alias_map) -> Result:
+def price_components_sum(response, alias_map, probe) -> Result:
     """Total must equal base plus taxes plus fees.
 
     A metamorphic check: it holds whatever the actual fare is, so it survives a
@@ -107,7 +108,7 @@ def price_components_sum(response, alias_map) -> Result:
     return True, f"{len(offers)} offers internally consistent"
 
 
-def itinerary_segments_present(response, alias_map) -> Result:
+def itinerary_segments_present(response, alias_map, probe) -> Result:
     offers = _offers(response, alias_map)
     for index, offer in enumerate(offers):
         if not lookup(alias_map, "offer.segments", offer):
@@ -115,7 +116,7 @@ def itinerary_segments_present(response, alias_map) -> Result:
     return True, "every offer carries an itinerary"
 
 
-def rejects_invalid_input(response, alias_map) -> Result:
+def rejects_invalid_input(response, alias_map, probe) -> Result:
     """The negative probe. A bad request must be refused, not answered."""
     if lookup(alias_map, "error_list", response):
         return True, "rejected as expected"
@@ -125,13 +126,38 @@ def rejects_invalid_input(response, alias_map) -> Result:
     return False, "invalid input neither errored nor returned offers"
 
 
-REGISTRY: Dict[str, Callable[[Any, Dict[str, List[str]]], Result]] = {
+def price_within_plausible_range(response, alias_map, probe) -> Result:
+    """An absolute anchor, where price_components_sum is a relative one.
+
+    Internal consistency cannot see a units error: convert base, taxes and total to
+    cents together and base + taxes still equals total. Only a bound tied to the real
+    world catches that, so the range comes from the probe definition, per route.
+    """
+    bounds = (probe or {}).get("plausible_total")
+    if not bounds:
+        return True, "no range configured for this probe"
+    low, high = float(bounds["min"]), float(bounds["max"])
+    offers = _offers(response, alias_map)
+    if not offers:
+        return False, "no offers to check"
+    for index, offer in enumerate(offers):
+        total = _number(next(iter(lookup(alias_map, "offer.total", offer)), None))
+        if total is None:
+            return False, f"offer {index} exposes no numeric total price"
+        if not low <= total <= high:
+            return False, (f"offer {index}: total {total} is outside the plausible "
+                           f"{low:g}-{high:g} range for this route")
+    return True, f"{len(offers)} offers within {low:g}-{high:g}"
+
+
+REGISTRY: Dict[str, Callable[[Any, Dict[str, List[str]], Probe], Result]] = {
     "offers_present": offers_present,
     "every_offer_has_total_price": every_offer_has_total_price,
     "currency_is_iso4217": currency_is_iso4217,
     "price_components_sum": price_components_sum,
     "itinerary_segments_present": itinerary_segments_present,
     "rejects_invalid_input": rejects_invalid_input,
+    "price_within_plausible_range": price_within_plausible_range,
 }
 
 INTENT = {
@@ -141,10 +167,12 @@ INTENT = {
     "price_components_sum": "an offer total equals its base fare plus taxes plus fees",
     "itinerary_segments_present": "every offer carries the itinerary it prices",
     "rejects_invalid_input": "a malformed request is refused rather than answered",
+    "price_within_plausible_range": "a total price is a believable amount for this route",
 }
 
 
-def run(names: List[str], response: Any, alias_map: Dict[str, List[str]]) -> List[Dict[str, Any]]:
+def run(names: List[str], response: Any, alias_map: Dict[str, List[str]],
+        probe: Probe = None) -> List[Dict[str, Any]]:
     results = []
     for name in names:
         check = REGISTRY.get(name)
@@ -152,7 +180,7 @@ def run(names: List[str], response: Any, alias_map: Dict[str, List[str]]) -> Lis
             results.append({"assertion": name, "ok": False, "detail": "unknown assertion"})
             continue
         try:
-            ok, detail = check(response, alias_map)
+            ok, detail = check(response, alias_map, probe)
         except Exception as exc:  # a broken assertion is a failed assertion, not a crashed runner
             ok, detail = False, f"assertion raised {type(exc).__name__}: {exc}"
         results.append(

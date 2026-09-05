@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
-from src import config, logs
+from src import config, llm, logs
 
 # The only LLM in the hot path. It returns a classification and a rationale.
 # It never returns a number that reaches Prometheus - see docs/DECISIONS.md D1.
@@ -68,21 +68,11 @@ def _heuristic(delta: Dict[str, List], failures: List[Dict]) -> Dict[str, Any]:
             "classification": "cosmetic",
             "rationale": f"{removed[0]} appears to have been renamed to {added[0]}",
             "proposed_heal": {"old_path": removed[0], "new_path": added[0]},
-            "confidence": 0.6,
+            # Exactly one path left and exactly one appeared: structurally unambiguous.
+            "confidence": 0.75,
         }
-    broken_invariant = next(
-        (f for f in failures
-         if f["assertion"] == "price_components_sum" and "!=" in f.get("detail", "")),
-        None,
-    )
-    if broken_invariant:
-        return {
-            "classification": "semantic",
-            "rationale": "an offer total no longer equals base plus taxes plus fees",
-            "proposed_heal": None,
-            "confidence": 0.9,
-        }
-
+    # Structure before meaning, in both directions: paths that vanished with nothing
+    # taking their place are breaking whatever the invariants say about them.
     if removed:
         return {
             "classification": "breaking",
@@ -90,6 +80,18 @@ def _heuristic(delta: Dict[str, List], failures: List[Dict]) -> Dict[str, Any]:
             "proposed_heal": None,
             "confidence": 0.5,
         }
+
+    # No structural signal at all, yet an intent stopped holding. That is the definition
+    # of a meaning change, whichever invariant caught it.
+    if failures:
+        first = failures[0]
+        return {
+            "classification": "semantic",
+            "rationale": f"{first.get('intent', first['assertion'])} no longer holds: {first['detail']}",
+            "proposed_heal": None,
+            "confidence": 0.9,
+        }
+
     return {
         "classification": "none",
         "rationale": "additive change only",
@@ -110,31 +112,29 @@ def _parse(text: str) -> Dict[str, Any]:
         parsed["proposed_heal"] = None
     if parsed["classification"] != "cosmetic":
         parsed["proposed_heal"] = None
+    try:
+        parsed["confidence"] = float(parsed.get("confidence"))
+    except (TypeError, ValueError):
+        parsed["confidence"] = 0.0
     return parsed
 
 
 def judge(probe: str, delta: Dict[str, List], failures: List[Dict], old_sample, new_sample) -> Dict[str, Any]:
-    if not config.ANTHROPIC_API_KEY:
+    if not llm.available():
         verdict = _heuristic(delta, failures)
         verdict["model"] = "heuristic-fallback"
         return verdict
 
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
     prompt = _prompt(probe, delta, failures, old_sample, new_sample)
     last_error = None
     for attempt in range(3):
         try:
-            message = client.messages.create(
-                model=config.ANTHROPIC_MODEL,
-                max_tokens=500,
-                system=_SYSTEM,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            verdict = _parse("".join(block.text for block in message.content if block.type == "text"))
-            verdict["model"] = config.ANTHROPIC_MODEL
+            verdict = _parse(llm.complete(_SYSTEM, prompt, max_tokens=500))
+            verdict["model"] = llm.model_name()
             return verdict
+        except llm.Permanent as exc:
+            last_error = exc
+            break
         except Exception as exc:
             last_error = exc
             prompt = prompt + f"\n\nYour previous reply was rejected: {exc}. Reply with one JSON object only."

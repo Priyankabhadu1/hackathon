@@ -33,7 +33,7 @@ DRIFT_SCORE = {"none": 0.0, "cosmetic": 0.3, "semantic": 0.7, "breaking": 1.0}
 
 | Metric | Type | Labels | Notes |
 |---|---|---|---|
-| `ds_self_heal_total` | Counter | `probe`, `outcome` | `outcome` ∈ `applied`, `refused` |
+| `ds_self_heal_total` | Counter | `probe`, `outcome` | `outcome` ∈ `applied`, `refused`, `refused_low_confidence` |
 | `ds_assertion_failures_total` | Counter | `probe`, `assertion` | intent-level failures |
 | `ds_manual_edits_total` | Counter | — | incremented by hand only. **Stays 0 in the demo — this is the maintenance-reduction claim** |
 
@@ -99,3 +99,6 @@ ds_release_verdict
 | `SemanticDriftDetected` | `ds_drift_score >= 0.7` for 1m | a meaning change landed — block release |
 | `ProbeWorkflowDown` | `ds_probe_success == 0` for 2m | a travel workflow is failing |
 | `ProbeStale` | `time() - ds_probe_last_run_timestamp > 180` | runner has stopped |
+
+The release gate ignores the success-rate signal for a workflow with fewer than
+`verdict.MIN_RUNS_FOR_RATE` runs in the window — `rate()` over a single sample is not evidence.

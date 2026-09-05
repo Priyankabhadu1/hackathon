@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DriftSentinel Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f2f3f5; --panel:#ffffff; --sunk:#eaecef; --rail:#20272f;
+    --rule:#d8dce1; --rule-soft:#e8eaee;
+    --ink:#161b21; --ink-2:#454e58; --ink-3:#6e7883;
+    --accent:#1d5fa8;
+    /* status palette - fixed, never themed, always paired with a text label */
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    /* validated categorical slots, light surface #ffffff */
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0d1117; --panel:#161d26; --sunk:#111821; --rail:#0a0e13;
+      --rule:#26303b; --rule-soft:#1c242d;
+      --ink:#e3e8ee; --ink-2:#adb7c2; --ink-3:#79848f;
+      --accent:#6ba6dc;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --panel:#161d26; --sunk:#111821; --rail:#0a0e13;
+    --rule:#26303b; --rule-soft:#1c242d;
+    --ink:#e3e8ee; --ink-2:#adb7c2; --ink-3:#79848f;
+    --accent:#6ba6dc;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:100vh}
+  @media (max-width:860px){.app{grid-template-columns:1fr}}
+
+  /* ---- rail ---- */
+  .rail{background:var(--rail);display:flex;flex-direction:column;border-right:1px solid var(--rule)}
+  @media (max-width:860px){.rail{flex-direction:row;flex-wrap:wrap;align-items:center}}
+  .brand{padding:14px 16px 12px;font-weight:600;font-size:14px;color:#fff;
+         border-bottom:1px solid rgba(255,255,255,.09)}
+  .brand em{font-style:normal;color:#6ba6dc}
+  .brand small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.13em;
+               text-transform:uppercase;color:#727f8d;margin-top:3px;font-weight:400}
+  .nav{display:flex;flex-direction:column;padding:6px 0}
+  @media (max-width:860px){.nav{flex-direction:row;flex:1;padding:0;overflow-x:auto}
+    .brand{border-bottom:0}}
+  .nav button{appearance:none;background:none;border:0;border-left:2px solid transparent;
+              color:#9aa6b2;font:inherit;font-size:12.5px;text-align:left;padding:7px 16px;
+              cursor:pointer;display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+  @media (max-width:860px){.nav button{border-left:0;border-bottom:2px solid transparent}}
+  .nav button:hover{color:#e6ecf2;background:rgba(255,255,255,.05)}
+  .nav button:focus-visible{outline:2px solid #6ba6dc;outline-offset:-2px}
+  .nav button[aria-current="true"]{color:#fff;border-left-color:#6ba6dc;background:rgba(107,166,220,.11)}
+  @media (max-width:860px){.nav button[aria-current="true"]{border-bottom-color:#6ba6dc}}
+  .nav .ct{font-family:var(--mono);font-size:10px;color:#737f8c}
+  .nav .ct[data-alarm="true"]{color:#ff9c8f}
+  .railfoot{margin-top:auto;padding:11px 16px;border-top:1px solid rgba(255,255,255,.09);
+            font-family:var(--mono);font-size:10px;line-height:1.85;color:#6b7784}
+  .railfoot a{color:#8fb4d8;text-decoration:none}
+  .railfoot a:hover{text-decoration:underline}
+  @media (max-width:860px){.railfoot{display:none}}
+
+  /* ---- topbar ---- */
+  main{min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px 16px;padding:9px 18px;
+          background:var(--panel);border-bottom:1px solid var(--rule);
+          font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .svc{display:inline-flex;align-items:center;gap:5px;letter-spacing:.04em}
+  .svc i{width:7px;height:7px;background:var(--good);display:block}
+  .svc[data-up="false"]{color:var(--crit)}
+  .svc[data-up="false"] i{background:var(--crit)}
+  .topbar .sp{margin-left:auto}
+  .topbar b{color:var(--ink-2);font-weight:500}
+
+  /* ---- toolbar ---- */
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 18px;
+           border-bottom:1px solid var(--rule);background:var(--sunk)}
+  .lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+       color:var(--ink-3);margin-right:4px}
+  .seg{display:flex;flex-wrap:wrap}
+  .seg button,.btn{appearance:none;font:inherit;font-family:var(--mono);font-size:11.5px;
+       background:var(--panel);color:var(--ink-2);border:1px solid var(--rule);
+       padding:4px 10px;cursor:pointer;margin-right:-1px}
+  .seg button:hover,.btn:hover{color:var(--ink);border-color:var(--accent);position:relative;z-index:1}
+  .seg button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;z-index:2}
+  .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;
+       position:relative;z-index:1}
+  .btn{margin-right:0}
+  .btn[disabled],.seg button[disabled]{opacity:.45;cursor:wait}
+  .note{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:auto}
+
+  /* ---- layout ---- */
+  .view{padding:18px;display:none;gap:16px;flex-direction:column}
+  .view[data-active="true"]{display:flex}
+  .cols{display:grid;gap:16px}
+  @media (min-width:1080px){.cols{grid-template-columns:1fr 1fr}}
+  .panel{background:var(--panel);border:1px solid var(--rule);min-width:0}
+  .phead{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 12px;
+         padding:9px 14px;border-bottom:1px solid var(--rule-soft)}
+  .phead h2{margin:0;font-size:12.5px;font-weight:600}
+  .phead .sub{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+  .pbody{padding:14px}
+  .pbody.tight{padding:0}
+
+  /* ---- tables ---- */
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:7px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+  thead th{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+           color:var(--ink-3);font-weight:500;background:var(--sunk);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.m{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);overflow-wrap:anywhere}
+  tr[data-bad="true"] td{background:color-mix(in srgb,var(--crit) 8%,transparent)}
+
+  .sq{display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--ink-3)}
+  .sq[data-s="pass"],.sq[data-s="none"]{background:var(--good)}
+  .sq[data-s="cosmetic"]{background:var(--warn)}
+  .sq[data-s="semantic"]{background:var(--serious)}
+  .sq[data-s="breaking"],.sq[data-s="fail"]{background:var(--crit)}
+  .state{font-family:var(--mono);font-size:11px;white-space:nowrap}
+
+  /* ---- gate ---- */
+  .gate{display:grid;gap:12px}
+  @media (min-width:700px){.gate{grid-template-columns:150px minmax(0,1fr);gap:22px}}
+  .gate .big{font-size:38px;font-weight:600;line-height:1;letter-spacing:-.02em}
+  .gate[data-d="HOLD"] .big{color:var(--crit)}
+  .gate[data-d="PASS"] .big{color:var(--good)}
+  .gate .when{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:6px;
+              line-height:1.6;white-space:pre-line}
+  .gate p{margin:0 0 9px;color:var(--ink-2);max-width:80ch}
+  .blockers{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .blockers li{font-family:var(--mono);font-size:11px;color:var(--ink-2);padding-left:14px;
+               position:relative;line-height:1.5}
+  .blockers li::before{content:"";position:absolute;left:0;top:6px;width:6px;height:6px;background:var(--crit)}
+  .blockers li[data-ok="true"]::before{background:var(--good)}
+
+  /* ---- tiles ---- */
+  .tiles{display:grid;gap:1px;background:var(--rule-soft)}
+  @media (min-width:780px){.tiles{grid-template-columns:repeat(4,1fr)}}
+  .tile{background:var(--panel);padding:13px 15px 15px;display:grid;gap:2px;align-content:start}
+  .tile .dora{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--accent)}
+  .tile .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .tile .v{font-family:var(--mono);font-size:27px;font-weight:500;letter-spacing:-.02em;
+           font-variant-numeric:tabular-nums;line-height:1.2}
+  .tile .u{font-size:11.5px;color:var(--ink-2)}
+  .tile .d{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:4px}
+
+  /* ---- chart ---- */
+  .chartwrap{padding:12px 14px 4px}
+  svg.chart{display:block;width:100%;height:auto;overflow:visible}
+  svg.chart .grid{stroke:var(--rule-soft);stroke-width:1}
+  svg.chart .axis{fill:var(--ink-3);font-family:var(--mono);font-size:9px}
+  svg.chart .lbl{font-family:var(--mono);font-size:9.5px;font-weight:500}
+  svg.chart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 16px;padding:0 14px 12px;
+          font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:2px;display:block}
+  .ctip{position:fixed;pointer-events:none;z-index:40;background:var(--panel);
+        border:1px solid var(--rule);padding:7px 9px;font-family:var(--mono);font-size:10.5px;
+        color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.18);display:none}
+  .ctip div{display:flex;justify-content:space-between;gap:14px}
+
+  /* ---- steps ---- */
+  .steps{display:grid;gap:1px;background:var(--rule-soft)}
+  .step{background:var(--panel);display:grid;gap:8px;padding:12px 15px 14px}
+  @media (min-width:880px){.step{grid-template-columns:174px minmax(0,1fr);gap:8px 20px}}
+  .step.skip{background:var(--sunk)}
+  .sid .nm{font-weight:600;font-size:12.5px}
+  .sid .mod{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);overflow-wrap:anywhere}
+  .sid .tag{display:inline-block;margin-top:4px;font-family:var(--mono);font-size:9px;
+            letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--rule);
+            color:var(--ink-3)}
+  .sid .tag[data-t="ran"]{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+  .sid .ms{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:4px}
+  .snote{margin:0;color:var(--ink-2);font-size:12.5px;max-width:84ch}
+  .io{display:grid;gap:1px;background:var(--rule-soft);border:1px solid var(--rule-soft);margin-top:2px}
+  @media (min-width:760px){.io[data-two="true"]{grid-template-columns:1fr 1fr}}
+  .io > div{background:var(--panel);padding:9px 11px;min-width:0}
+  .io .h{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+         color:var(--ink-3);margin-bottom:5px}
+  .io pre{margin:0;font-family:var(--mono);font-size:10.5px;line-height:1.55;color:var(--ink-2);
+          white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}
+  .io pre .hi{color:var(--crit);font-weight:600}
+
+  /* ---- flow ---- */
+  .flowbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 14px;
+           border-bottom:1px solid var(--rule-soft);background:var(--sunk)}
+  .fstep{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:6px;white-space:nowrap}
+  .fcap{font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-left:10px;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .flowwrap{padding:10px 12px;overflow-x:auto}
+  #flow{display:block;width:100%;min-width:900px;height:auto}
+  #flow .box{fill:var(--panel);stroke:var(--rule);stroke-width:1.5}
+  #flow .lane{fill:none;stroke:var(--rule-soft);stroke-width:1;stroke-dasharray:4 4}
+  #flow .t1{fill:var(--ink);font-family:var(--sans);font-size:13px;font-weight:600}
+  #flow .t2{fill:var(--ink-3);font-family:var(--mono);font-size:9.5px}
+  #flow .tv{fill:var(--accent);font-family:var(--mono);font-size:10px;font-weight:500}
+  #flow .edge{fill:none;stroke:var(--rule);stroke-width:1.6;marker-end:url(#ar)}
+  #flow .elab{fill:var(--ink-3);font-family:var(--mono);font-size:9px}
+  #flow .g[data-state="idle"]{opacity:.34}
+  #flow .g[data-state="done"]{opacity:1}
+  #flow .g[data-state="done"] .box{stroke:var(--ink-3)}
+  #flow .g[data-state="live"]{opacity:1}
+  #flow .g[data-state="live"] .box{stroke:var(--accent);stroke-width:2.5}
+  #flow .g[data-state="skip"]{opacity:.18}
+  #flow .g[data-tone="heal"][data-state="live"] .box,
+  #flow .g[data-tone="heal"][data-state="done"] .box{stroke:var(--warn)}
+  #flow .g[data-tone="stop"][data-state="live"] .box,
+  #flow .g[data-tone="stop"][data-state="done"] .box{stroke:var(--crit)}
+  #flow .g[data-tone="good"][data-state="live"] .box,
+  #flow .g[data-tone="good"][data-state="done"] .box{stroke:var(--good)}
+  #flow .e[data-state="idle"]{opacity:.25}
+  #flow .e[data-state="taken"]{opacity:1}
+  #flow .e[data-state="taken"] .edge{stroke:var(--accent);stroke-width:2.4;marker-end:url(#ar-on)}
+  #flow .e[data-state="taken"] .elab{fill:var(--accent)}
+  #flow .e[data-tone="heal"][data-state="taken"] .edge{stroke:var(--warn);marker-end:url(#ar-warn)}
+  #flow .e[data-tone="heal"][data-state="taken"] .elab{fill:var(--warn)}
+  #flow .e[data-tone="stop"][data-state="taken"] .edge{stroke:var(--crit);marker-end:url(#ar-crit)}
+  #flow .e[data-tone="stop"][data-state="taken"] .elab{fill:var(--crit)}
+  #flow .e[data-state="dead"]{opacity:.1}
+  @media (prefers-reduced-motion:no-preference){
+    #flow .e[data-state="taken"] .edge{stroke-dasharray:7 5;animation:march 1s linear infinite}
+  }
+  @keyframes march{to{stroke-dashoffset:-12}}
+
+  /* ---- feed ---- */
+  .frow{display:grid;grid-template-columns:62px 126px minmax(0,1fr);gap:12px;padding:5px 14px;
+        border-bottom:1px solid var(--rule-soft);font-family:var(--mono);font-size:11px;
+        border-left:2px solid transparent}
+  .frow:last-child{border-bottom:0}
+  .frow[data-k="drift_judgment"],.frow[data-k="structural_diff"]{border-left-color:var(--accent)}
+  .frow[data-k="heal"]{border-left-color:var(--warn)}
+  .frow[data-k="assertion_failure"]{border-left-color:var(--crit)}
+  .frow[data-k="verdict"]{border-left-color:var(--good)}
+  .frow .t{color:var(--ink-3)}
+  .frow .k{color:var(--ink)}
+  .frow .m{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width:700px){.frow{grid-template-columns:1fr;gap:1px}.frow .m{white-space:normal}}
+
+  .empty{padding:20px 14px;color:var(--ink-3);font-family:var(--mono);font-size:11.5px}
+  .banner{margin:0;padding:9px 14px;font-family:var(--mono);font-size:11px;line-height:1.55;
+          border-bottom:1px solid var(--rule-soft)}
+  .banner[data-tone="crit"]{background:color-mix(in srgb,var(--crit) 11%,transparent);color:var(--crit)}
+  .banner[data-tone="warn"]{background:color-mix(in srgb,var(--warn) 17%,transparent);color:var(--ink-2)}
+  .offline{background:var(--crit);color:#fff;padding:7px 18px;font-family:var(--mono);font-size:11.5px}
+  [hidden]{display:none!important}
+  code{font-family:var(--mono);font-size:.9em;background:var(--sunk);padding:.05em .3em;
+       border:1px solid var(--rule-soft)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">Drift<em>Sentinel</em><small>contract observability</small></div>
+    <nav class="nav" id="nav">
+      <button data-view="overview" aria-current="true">Overview <span class="ct" id="n-ov"></span></button>
+      <button data-view="pipeline">Pipeline <span class="ct" id="n-pl"></span></button>
+      <button data-view="simulator">Simulator</button>
+      <button data-view="delivery">Delivery <span class="ct" id="n-dl"></span></button>
+      <button data-view="feed">Event feed <span class="ct" id="n-fd"></span></button>
+    </nav>
+    <div class="railfoot">
+      <a href="http://localhost:3000" target="_blank" rel="noreferrer">Grafana</a><br>
+      <a href="http://localhost:3000/explore" target="_blank" rel="noreferrer">Loki via Grafana</a><br>
+      <a href="http://localhost:9090" target="_blank" rel="noreferrer">Prometheus</a><br>
+      <a href="http://localhost:8000/metrics" target="_blank" rel="noreferrer">runner /metrics</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="offline" id="offline" hidden>Console API unreachable — is <code>python -m ui.server</code> running?</div>
+
+    <div class="topbar">
+      <span class="svc" id="svc-runner" data-up="true"><i></i>RUNNER</span>
+      <span class="svc" id="svc-prometheus" data-up="true"><i></i>PROMETHEUS</span>
+      <span class="svc" id="svc-loki" data-up="true"><i></i>LOKI</span>
+      <span class="svc" id="svc-grafana" data-up="true"><i></i>GRAFANA</span>
+      <span class="sp">mode <b id="t-mode">—</b></span>
+      <span>judge <b id="t-model">—</b></span>
+      <span>updated <b id="t-clock">—</b></span>
+    </div>
+
+    <div class="toolbar">
+      <span class="lab">served response</span>
+      <span class="seg" id="variants"></span>
+      <span class="note" id="tool-note">the next probe cycle picks it up</span>
+    </div>
+
+    <section class="view" data-view="overview" data-active="true">
+      <div class="panel">
+        <div class="phead"><h2>Release gate</h2>
+          <span class="sub">src/verdict.py — deterministic rules decide, the model only writes the note</span></div>
+        <div class="pbody">
+          <div class="gate" id="gate" data-d="PASS">
+            <div><div class="big" id="g-dec">—</div><div class="when" id="g-when"></div></div>
+            <div><p id="g-text">Waiting for the first verdict. The gate runs every fourth probe cycle.</p>
+              <ul class="blockers" id="g-why"></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="phead"><h2>Travel workflows under probe</h2>
+          <span class="sub">ds_probe_success · ds_probe_latency_seconds · runner fingerprint state</span></div>
+        <div class="pbody tight"><table>
+          <thead><tr><th>Probe</th><th>Workflow</th><th>State</th><th class="n">p95</th>
+            <th class="n">pass/fail</th><th>Fingerprint</th><th>Drift</th><th>Failing intent</th></tr></thead>
+          <tbody id="probe-rows"></tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead"><h2>Drift score, last 30 minutes</h2>
+          <span class="sub">max by (probe) (ds_drift_score) — the y axis is the classification enum</span></div>
+        <div class="chartwrap"><svg class="chart" id="chart" viewBox="0 0 780 190"
+             role="img" aria-label="Drift score per probe over the last 30 minutes"></svg></div>
+        <div class="legend" id="chart-legend"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="pipeline">
+      <div class="panel" id="payload-panel" hidden>
+        <div class="phead"><h2>Response under test</h2>
+          <span class="sub">baseline vs what the replay client is serving, resolved through the alias map</span></div>
+        <div id="payload"></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><h2>What each stage last did</h2>
+          <span class="sub">read back from Prometheus and Loki — this console computes nothing</span></div>
+        <div class="steps" id="rail-steps"></div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <div class="phead"><h2>Alias map</h2><span class="sub">fixtures/alias_map.json</span></div>
+          <div class="pbody tight"><table><tbody id="alias-rows"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="phead"><h2>Counters</h2><span class="sub">scraped from :8000/metrics</span></div>
+          <div class="pbody tight"><table><tbody id="counter-rows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="simulator">
+      <div class="panel">
+        <div class="phead"><h2>Step the pipeline</h2>
+          <span class="sub">the same functions in a sandbox — no counters moved, no alias edited, no log lines</span></div>
+        <div class="pbody">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:11px">
+            <span class="lab">previous cycle saw</span>
+            <span class="seg" id="sim-prior"></span>
+            <span class="lab" style="margin-left:8px">then receives</span>
+            <span class="seg" id="sim-variant"></span>
+            <button class="btn" id="sim-run" style="margin-left:8px">Run one cycle</button>
+          </div>
+          <p style="margin:0;color:var(--ink-2);max-width:84ch">
+            A probe cycle takes about four milliseconds across six modules, which is why a dashboard
+            can only ever show you the wreckage afterwards. This replays one and walks the real
+            values through the architecture.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel" id="sim-flow-panel" hidden>
+        <div class="phead"><h2 id="sim-title">Trace</h2><span class="sub" id="sim-sub"></span></div>
+        <div class="flowbar">
+          <button class="btn" id="f-prev" title="previous stage">◀</button>
+          <button class="btn" id="f-play">▶ Play</button>
+          <button class="btn" id="f-next" title="next stage">▶|</button>
+          <span class="fstep" id="f-step"></span>
+          <span class="fcap" id="f-cap"></span>
+        </div>
+        <div class="flowwrap">
+          <svg id="flow" viewBox="0 0 1340 400" role="img"
+               aria-label="Pipeline flow, highlighting the path this cycle took"></svg>
+        </div>
+        <div class="io" data-two="true" id="f-io" style="margin:0;border:0;border-top:1px solid var(--rule-soft)"></div>
+      </div>
+
+      <div class="panel" id="sim-result" hidden>
+        <div class="phead"><h2>Full trace</h2><span class="sub">every stage, in order</span></div>
+        <div class="steps" id="sim-steps"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="delivery">
+      <div class="panel">
+        <div class="phead"><h2>Delivery metrics for the API contract</h2>
+          <span class="sub">DORA's four, restated — the system under test is the thing shipping</span></div>
+        <div class="tiles" id="dora-tiles"></div>
+        <p class="banner" data-tone="warn" style="border-bottom:0;border-top:1px solid var(--rule-soft)">
+          DORA measures your own delivery pipeline. These measure the pipeline of whoever is changing
+          the API you depend on — which, when that is increasingly an AI agent, is the number nobody has.
+        </p>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <div class="phead"><h2>Change mix</h2><span class="sub">ds_drift_events_total by classification</span></div>
+          <div class="pbody tight"><table>
+            <thead><tr><th>Classification</th><th class="n">Events</th><th class="n">Share</th><th>Action taken</th></tr></thead>
+            <tbody id="mix-rows"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="phead"><h2>Recovery</h2><span class="sub">red→green spans read off ds_probe_success</span></div>
+          <div class="pbody tight"><table>
+            <thead><tr><th>Probe</th><th class="n">Red for</th><th>Status</th></tr></thead>
+            <tbody id="restore-rows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="feed">
+      <div class="panel">
+        <div class="phead"><h2>Event feed</h2><span class="sub">{job="driftsentinel"} via Loki, newest first</span></div>
+        <div id="feed"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="ctip" id="ctip"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const SERIES = ['--s1','--s2','--s3','--s4'];
+const VARIANTS = [
+  ['baseline','baseline'], ['cosmetic','cosmetic rename'], ['semantic','semantic drift'],
+  ['semantic_cold','semantic, no rename'], ['validation_swallowed','validation swallowed'],
+  ['minor_units','hotel total in cents'], ['minor_units_consistent','everything in cents'],
+];
+const PROBE_FOR = {validation_swallowed:'invalid_input', minor_units:'hotel_search',
+                   minor_units_consistent:'hotel_search'};
+let busy = false;
+
+$('nav').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-view]');
+  if (!b) return;
+  document.querySelectorAll('#nav button').forEach(x => x.setAttribute('aria-current', String(x === b)));
+  document.querySelectorAll('.view').forEach(v =>
+    v.setAttribute('data-active', String(v.dataset.view === b.dataset.view)));
+});
+
+function segHTML(attr, current) {
+  return VARIANTS.map(([v, label]) =>
+    `<button data-${attr}="${v}" aria-pressed="${v === current}">${esc(label)}</button>`).join('');
+}
+$('variants').innerHTML = segHTML('variant', 'baseline');
+$('sim-prior').innerHTML = segHTML('prior', 'cosmetic');
+$('sim-variant').innerHTML = segHTML('svariant', 'semantic');
+
+$('variants').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-variant]');
+  if (!b || busy) return;
+  busy = true;
+  document.querySelectorAll('#variants button').forEach(x => x.disabled = true);
+  $('tool-note').textContent = `switching to ${b.dataset.variant}…`;
+  try {
+    const r = await fetch('/api/variant', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({variant: b.dataset.variant})});
+    const j = await r.json();
+    $('tool-note').textContent = j.message || j.error || '';
+  } catch { $('tool-note').textContent = 'console API unreachable'; }
+  document.querySelectorAll('#variants button').forEach(x => x.disabled = false);
+  busy = false; refresh();
+});
+
+for (const [box, attr] of [['sim-prior','prior'], ['sim-variant','svariant']]) {
+  $(box).addEventListener('click', (e) => {
+    const b = e.target.closest(`button[data-${attr}]`);
+    if (!b) return;
+    $(box).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+}
+
+$('sim-run').addEventListener('click', async () => {
+  const pick = (box, attr) => $(box).querySelector('[aria-pressed="true"]').dataset[attr];
+  const prior = pick('sim-prior','prior'), variant = pick('sim-variant','svariant');
+  $('sim-run').disabled = true; $('sim-run').textContent = 'Running…';
+  try {
+    const r = await fetch('/api/simulate', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({prior, variant, probe: PROBE_FOR[variant] || 'roundtrip_search'})});
+    const t = await r.json();
+    if (t.error) { $('sim-steps').innerHTML = `<div class="empty">${esc(t.error)}</div>`;
+      $('sim-flow-panel').hidden = true; }
+    else renderTrace(t);
+    $('sim-result').hidden = false;
+  } catch (e) {
+    $('sim-steps').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+    $('sim-result').hidden = false;
+  }
+  $('sim-run').disabled = false; $('sim-run').textContent = 'Run one cycle';
+});
+
+function fmtVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (Array.isArray(v)) return v.length
+    ? v.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join('\n') : '[]';
+  if (typeof v === 'object') return JSON.stringify(v, null, 1);
+  return String(v);
+}
+function ioBlock(title, obj) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return '';
+  const body = entries.map(([k, v]) => {
+    const val = fmtVal(v);
+    const bad = /\b(fail|refused|semantic|breaking|outside)\b|!=/i.test(val);
+    return `${k ? esc(k) + ': ' : ''}<span class="${bad ? 'hi' : ''}">${esc(val)}</span>`;
+  }).join('\n');
+  return `<div><div class="h">${esc(title)}</div><pre>${body}</pre></div>`;
+}
+function stepHTML(s) {
+  const inb = ioBlock('input', s.input), outb = ioBlock('output', s.output);
+  const two = Boolean(inb) && Boolean(outb);
+  return `<div class="step ${s.ran ? '' : 'skip'}">
+    <div class="sid">
+      <div class="nm">${esc(s.name)}</div>
+      <div class="mod">${esc(s.module)}</div>
+      <span class="tag" data-t="${s.ran ? 'ran' : 'skipped'}">${s.ran ? 'ran' : 'skipped'}</span>
+      ${s.ran && s.ms ? `<div class="ms">${s.ms} ms</div>` : ''}
+    </div>
+    <div>
+      ${s.note ? `<p class="snote">${esc(s.note)}</p>` : ''}
+      ${inb || outb ? `<div class="io" data-two="${two}">${inb}${outb}</div>` : ''}
+      ${(s.logs || []).length
+        ? `<div class="io">${ioBlock('log lines emitted', {'': s.logs.join('\n')})}</div>` : ''}
+    </div></div>`;
+}
+function renderTrace(t) {
+  WALK = planWalk(t); POS = -1; stop(); paint();
+  $('sim-flow-panel').hidden = false;
+  $('sim-title').textContent = `${t.probe}: ${t.prior} → ${t.variant}`;
+  $('sim-sub').textContent = `${t.classification} · drift ${t.drift_score} · probe ${t.probe_result}`
+    + ` · ${t.total_ms} ms total · judge ${t.provider}`;
+  $('sim-steps').innerHTML = t.stages.map(stepHTML).join('');
+}
+
+/* ---------- architecture flow, driven by a real trace ---------- */
+const NODES = {
+  mcp:     {x:16,  y:158, w:150, h:70, t:'Amadeus MCP',  s:['flight + hotel search','system under test']},
+  runner:  {x:198, y:158, w:150, h:70, t:'Probe Runner', s:['4 travel workflows','fixed params']},
+  det1:    {x:382, y:56,  w:186, h:78, t:'1 · Structural', s:['field paths + types','values ignored']},
+  det2:    {x:382, y:252, w:186, h:78, t:'2 · Relational', s:['total = base+tax+fees','holds at any price']},
+  judge:   {x:614, y:150, w:186, h:96, t:'Drift Judge',  s:['classifies + explains','runs only on a trigger','never emits a number']},
+  heal:    {x:846, y:52,  w:158, h:76, t:'Self-Heal',    s:['remap alias path','probe stays green']},
+  refuse:  {x:846, y:258, w:158, h:76, t:'Refuse',       s:['fail probe + alert','release held']},
+  prom:    {x:1046,y:60,  w:132, h:64, t:'Prometheus',   s:['scores · counters']},
+  loki:    {x:1046,y:264, w:132, h:64, t:'Loki',         s:['rationale · payloads']},
+  verdict: {x:1204,y:158, w:126, h:80, t:'Release Gate', s:['rules decide','model narrates']},
+};
+const EDGES = [
+  ['e1','mcp','runner',  'M166,193 H198'],
+  ['e2','runner','det1', 'M348,183 C368,183 366,95 382,95'],
+  ['e3','runner','det2', 'M348,203 C368,203 366,291 382,291'],
+  ['e4','det1','judge',  'M568,95 C594,95 594,180 614,180', 'hash changed', 588, 84],
+  ['e5','det2','judge',  'M568,291 C594,291 594,216 614,216', 'invariant broke', 584, 306],
+  ['e6','det1','prom',   'M475,56 C475,18 1000,14 1112,60', 'nothing changed → metrics only, no model call', 700, 12],
+  ['e7','judge','heal',  'M800,180 C824,180 826,90 846,90', 'cosmetic', 806, 118],
+  ['e8','judge','refuse','M800,216 C824,216 826,296 846,296', 'semantic / breaking', 800, 268],
+  ['e9','heal','prom',   'M1004,90 H1046'],
+  ['e10','refuse','loki','M1004,296 H1046'],
+  ['e11','judge','loki', 'M707,246 C707,340 900,344 1046,306', 'every judgment logged with its reasoning', 800, 358],
+  ['e12','prom','verdict','M1178,92 C1200,92 1204,150 1210,158'],
+  ['e13','loki','verdict','M1178,296 C1200,296 1204,240 1210,238'],
+  ['e14','heal','det2',  'M925,128 C925,200 700,210 568,278', 're-assert through the new path', 690, 214],
+];
+const TONE = {heal:'heal', refuse:'stop', prom:'good', loki:'good', verdict:'good'};
+
+function buildFlow() {
+  const svg = document.getElementById('flow');
+  const mk = (c) => `<marker id="${c[0]}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6"
+      markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${c[1]}"/></marker>`;
+  let out = `<defs>${[['ar','var(--rule)'],['ar-on','var(--accent)'],['ar-warn','var(--warn)'],
+    ['ar-crit','var(--crit)']].map(mk).join('')}</defs>`;
+  out += `<rect class="lane" x="1030" y="34" width="164" height="316" rx="3"/>`
+       + `<text class="t2" x="1112" y="28" text-anchor="middle">TELEMETRY</text>`;
+  for (const [id, e] of EDGES.map(e => [e[0], e])) {
+    out += `<g class="e" id="${id}" data-state="idle" data-tone="${
+      e[2] === 'heal' ? 'heal' : e[2] === 'refuse' ? 'stop' : ''}">
+      <path class="edge" d="${e[3]}"/>${e[4] ? `<text class="elab" x="${e[5]}" y="${e[6]}">${e[4]}</text>` : ''}</g>`;
+  }
+  for (const [id, n] of Object.entries(NODES)) {
+    const lines = n.s.map((line, i) =>
+      `<text class="t2" x="${n.x + n.w / 2}" y="${n.y + 38 + i * 13}" text-anchor="middle">${line}</text>`).join('');
+    out += `<g class="g" id="n-${id}" data-state="idle" data-tone="${TONE[id] || ''}">
+      <rect class="box" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4"/>
+      <text class="t1" x="${n.x + n.w / 2}" y="${n.y + 23}" text-anchor="middle">${n.t}</text>
+      ${lines}
+      <text class="tv" id="v-${id}" x="${n.x + n.w / 2}" y="${n.y + n.h - 8}" text-anchor="middle"></text>
+    </g>`;
+  }
+  svg.innerHTML = out;
+}
+buildFlow();
+
+/* map a trace into an ordered walk over the diagram */
+function planWalk(t) {
+  const by = (name) => t.stages.find(s => s.name === name) || null;
+  const call = by('Probe call'), fp = by('Fingerprint'), asrt = by('Intent assertions');
+  const trig = by('Trigger'), jd = by('Drift judge'), hl = by('Self-healer');
+  const re = by('Re-assert'), mx = by('Metrics export');
+  const shape = fp && fp.output.changed;
+  const why = trig ? trig.output.because : 'nothing changed';
+  const ran = jd && jd.ran;
+  const cls = ran ? jd.output.classification : 'none';
+  const healed = hl && hl.ran && hl.output.outcome === 'applied';
+  const refused = hl && hl.ran && String(hl.output.outcome || '').startsWith('refused');
+
+  const steps = [];
+  const push = (nodes, edges, cap, stage, vals) =>
+    steps.push({nodes, edges, cap, stage, vals: vals || {}});
+
+  push(['mcp','runner'], ['e1'],
+    `Probe runner calls ${t.probe} — ${call ? call.output.served : ''}`, call,
+    {mcp: t.variant, runner: `${call ? call.ms : 0} ms`});
+  push(['det1'], ['e2'],
+    shape ? `Structural detector: hash moved to ${fp.output.hash}`
+          : `Structural detector: hash unchanged at ${fp ? fp.output.hash : ''} — nothing to see`,
+    fp, {det1: fp ? (shape ? 'CHANGED' : 'no change') : ''});
+  push(['det2'], ['e3'],
+    asrt && asrt.output.failing.length
+      ? `Relational detector: ${asrt.output.failing.join(', ')} broke`
+      : `Relational detector: every invariant holds`,
+    asrt, {det2: asrt ? (asrt.output.failing.length ? asrt.output.failing.length + ' failing' : 'all hold') : ''});
+
+  if (!ran) {
+    push(['prom'], ['e6'], 'Neither detector tripped. Metrics only — the model is never called.', mx,
+      {prom: 'no model call'});
+  } else {
+    push(['judge'], [shape ? 'e4' : 'e5'],
+      `Judge woken by the ${why} detector — ${jd.output.classification}: ${jd.output.rationale}`,
+      jd, {judge: `${jd.output.classification} · ${jd.output.confidence ?? '—'}`});
+    if (healed) {
+      push(['heal'], ['e7'], hl.output.justification, hl,
+        {heal: `${hl.output.old_path} → ${hl.output.new_path}`});
+      if (re) push(['det2'], ['e14'],
+        re.output.failing.length ? `Re-asserted and still failing: ${re.output.failing.join(', ')}`
+                                 : 'Re-asserted through the new path — every intent holds again',
+        re, {det2: re.output.failing.length ? 'still failing' : 'holds again'});
+    } else if (refused) {
+      push(['refuse'], ['e8'], hl.output.justification, hl, {refuse: hl.output.outcome});
+    }
+    push(['loki'], ['e11'], 'The judgment and its reasoning are written to Loki, next to the payloads.',
+      null, {loki: 'rationale stored'});
+    push(['prom'], [healed ? 'e9' : refused ? 'e10' : 'e6'],
+      `Deterministic values exported: ds_drift_score ${t.drift_score}, probe ${t.probe_result}.`,
+      mx, {prom: `drift ${t.drift_score}`});
+  }
+  push(['verdict'], ['e12','e13'],
+    t.probe_result === 'fail'
+      ? 'Release gate: a failing workflow and a semantic score are blocking reasons — HOLD.'
+      : 'Release gate: nothing blocking — PASS.',
+    null, {verdict: t.probe_result === 'fail' ? 'HOLD' : 'PASS'});
+
+  // edges the run could have used but did not
+  const used = new Set(steps.flatMap(s => s.edges));
+  const dead = ['e4','e5','e6','e7','e8','e9','e10','e14'].filter(e => !used.has(e));
+  return {steps, dead, cls};
+}
+
+let WALK = null, POS = -1, TIMER = null;
+function paint() {
+  if (!WALK) return;
+  document.querySelectorAll('#flow .g').forEach(g => g.dataset.state = 'idle');
+  document.querySelectorAll('#flow .e').forEach(e => e.dataset.state = 'idle');
+  document.querySelectorAll('#flow .tv').forEach(t => t.textContent = '');
+  WALK.dead.forEach(id => { const e = document.getElementById(id); if (e) e.dataset.state = 'dead'; });
+
+  WALK.steps.forEach((s, i) => {
+    if (i > POS) return;
+    const live = i === POS;
+    s.nodes.forEach(n => {
+      const g = document.getElementById('n-' + n);
+      if (g && (live || g.dataset.state === 'idle')) g.dataset.state = live ? 'live' : 'done';
+    });
+    s.edges.forEach(e => { const g = document.getElementById(e); if (g) g.dataset.state = 'taken'; });
+    Object.entries(s.vals).forEach(([k, v]) => {
+      const t = document.getElementById('v-' + k); if (t) t.textContent = v;
+    });
+  });
+
+  const cur = WALK.steps[POS];
+  document.getElementById('f-step').textContent =
+    POS < 0 ? `0 / ${WALK.steps.length}` : `${POS + 1} / ${WALK.steps.length}`;
+  document.getElementById('f-cap').textContent = cur ? cur.cap : 'press play';
+  document.getElementById('f-cap').title = cur ? cur.cap : '';
+  const st = cur && cur.stage;
+  document.getElementById('f-io').innerHTML = st
+    ? ioBlock(`${st.module} — input`, st.input) + ioBlock('output', st.output)
+    : '';
+}
+function stop() { clearInterval(TIMER); TIMER = null; document.getElementById('f-play').textContent = '▶ Play'; }
+function step(d) { stop(); POS = Math.max(0, Math.min(WALK.steps.length - 1, POS + d)); paint(); }
+
+document.getElementById('f-next').addEventListener('click', () => step(1));
+document.getElementById('f-prev').addEventListener('click', () => step(-1));
+document.getElementById('f-play').addEventListener('click', () => {
+  if (!WALK) return;
+  if (TIMER) return stop();
+  if (POS >= WALK.steps.length - 1) POS = -1;
+  document.getElementById('f-play').textContent = '❚❚ Pause';
+  TIMER = setInterval(() => {
+    if (POS >= WALK.steps.length - 1) return stop();
+    POS++; paint();
+  }, 1400);
+});
+
+const TICKS = [[0,'none'],[0.3,'cosmetic'],[0.7,'semantic'],[1,'breaking']];
+const fmtT = (t) => new Date(t * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+function drawChart(series) {
+  const W = 780, H = 190, L = 78, R = 112, T = 10, B = 22;
+  const svg = $('chart');
+  const active = (series || []).filter(s => s.points && s.points.length);
+  if (!active.length) {
+    svg.innerHTML = `<text x="8" y="22" class="axis">no samples in the window yet</text>`;
+    $('chart-legend').innerHTML = ''; return;
+  }
+  const all = active.flatMap(s => s.points.map(p => p[0]));
+  const t0 = Math.min(...all), t1 = Math.max(...all);
+  const x = (t) => L + (t1 === t0 ? 0 : (t - t0) / (t1 - t0)) * (W - L - R);
+  const y = (v) => T + (1 - Math.max(0, Math.min(1, v))) * (H - T - B);
+
+  let out = '';
+  for (const [v, name] of TICKS) {
+    const yy = y(v).toFixed(1);
+    out += `<line class="grid" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/>`
+         + `<text class="axis" x="${L - 8}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${v.toFixed(1)}  ${name}</text>`;
+  }
+  out += `<text class="axis" x="${L}" y="${H - 6}">${fmtT(t0)}</text>`
+       + `<text class="axis" x="${W - R}" y="${H - 6}" text-anchor="end">${fmtT(t1)}</text>`;
+
+  // step-after: a gauge holds its value until the next sample, so a sloped line would lie
+  const labels = [];
+  active.forEach((s, i) => {
+    const col = `var(${SERIES[i % SERIES.length]})`;
+    let d = '', prev = null;
+    s.points.forEach((p, j) => {
+      const px = x(p[0]).toFixed(1), py = y(p[1]).toFixed(1);
+      if (j === 0) d += `M${px},${py}`;
+      else { d += `L${px},${y(prev[1]).toFixed(1)}L${px},${py}`; }
+      prev = p;
+    });
+    out += `<path class="ln" d="${d}" stroke="${col}"/>`;
+    labels.push({text: s.probe, col, y: y(s.points[s.points.length - 1][1])});
+  });
+
+  // Series resting at the same value would stack their direct labels on top of one
+  // another - which is most of the time here, since a healthy probe sits flat at 0.
+  const GAP = 11;
+  labels.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < labels.length; i++)
+    if (labels[i].y - labels[i - 1].y < GAP) labels[i].y = labels[i - 1].y + GAP;
+  const overflow = labels.length ? labels[labels.length - 1].y - (H - B) : 0;
+  if (overflow > 0) labels.forEach(l => l.y -= overflow);
+  for (const l of labels)
+    out += `<text class="lbl" x="${W - R + 9}" y="${(l.y + 3.5).toFixed(1)}" fill="${l.col}">${esc(l.text)}</text>`;
+  svg.innerHTML = out;
+  $('chart-legend').innerHTML = active.map((s, i) =>
+    `<span><i style="background:var(${SERIES[i % SERIES.length]})"></i>${esc(s.probe)}</span>`).join('');
+
+  svg.onmousemove = (ev) => {
+    const box = svg.getBoundingClientRect();
+    const px = (ev.clientX - box.left) / box.width * W;
+    const tip = $('ctip');
+    if (px < L || px > W - R) { tip.style.display = 'none'; return; }
+    const t = t0 + (px - L) / (W - L - R) * (t1 - t0);
+    const rows = active.map((s, i) => {
+      let best = s.points[0];
+      for (const p of s.points) if (Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+      return `<div><span><i style="display:inline-block;width:9px;height:2px;vertical-align:middle;`
+           + `margin-right:6px;background:var(${SERIES[i % SERIES.length]})"></i>${esc(s.probe)}</span>`
+           + `<b>${best[1].toFixed(2)}</b></div>`;
+    }).join('');
+    tip.innerHTML = `<div style="color:var(--ink-3);margin-bottom:4px">${fmtT(t)}</div>${rows}`;
+    tip.style.display = 'block';
+    tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 12) + 'px';
+    tip.style.top = (ev.clientY + 14) + 'px';
+  };
+  svg.onmouseleave = () => { $('ctip').style.display = 'none'; };
+}
+
+function liveStages(d) {
+  const j = d.judgments[0] || null, h = d.heal_log[0] || null;
+  const failing = d.probes.filter(p => !p.ok);
+  return [
+    {name:'Probe call', module:'src/mcp_client.py', ran:true,
+     note:`${d.mode} client serving the ${d.variant} fixture set to ${d.probes.length} probes.`,
+     input:{}, output:Object.fromEntries(d.probes.map(p => [p.probe, `${p.p95_ms} ms p95 · ${p.pass} pass / ${p.fail} fail`]))},
+    {name:'Fingerprint', module:'src/fingerprint.py', ran:true,
+     note:'Field paths and type kinds only. A price move or a different offer count cannot shift the hash.',
+     input:{}, output:Object.fromEntries(d.probes.map(p => [p.probe, `${p.fingerprint || '—'} · ${p.fingerprint_changes} change(s)`]))},
+    {name:'Intent assertions', module:'src/assertions.py', ran:true,
+     note: failing.length ? `${failing.length} probe(s) failing an intent.`
+       : 'Every intent holding — the component sum, the per-route price band, and the negative path.',
+     input:{}, output: failing.length
+       ? Object.fromEntries(failing.map(p => [p.probe, p.failing_assertions.join(', ') || 'see feed']))
+       : {status:'all holding'}},
+    {name:'Drift judge', module:'src/judge.py', ran:!!j,
+     note: j ? j.rationale
+       : 'Not invoked. No fingerprint moved and no invariant is failing — steady state costs one hash comparison.',
+     input: j ? {trigger:j.trigger} : {},
+     output: j ? {classification:j.classification, confidence:j.confidence, model:j.model,
+                  ds_drift_score:j.drift_score} : {'model calls':0}},
+    {name:'Self-healer', module:'src/heal.py', ran:!!h,
+     note: h ? h.justification : 'No judgment to act on.',
+     input:{}, output: h ? {outcome:h.outcome, old_path:h.old_path ?? '—', new_path:h.new_path ?? '—'} : {}},
+    {name:'Release gate', module:'src/verdict.py', ran:true,
+     note:'Hard rules decide; the model writes the note and cannot overturn a HOLD. Unreachable telemetry is itself a blocking reason.',
+     input:{}, output:{ds_release_verdict: d.verdict_gauge < 0 ? 'not set'
+       : (d.verdict_gauge === 1 ? '1 (PASS)' : '0 (HOLD)')}},
+  ];
+}
+
+function render(d) {
+  $('offline').hidden = true;
+  $('t-mode').textContent = `PROBE_MODE=${d.mode}`;
+  $('t-clock').textContent = new Date(d.now * 1000).toLocaleTimeString();
+  $('t-model').textContent = (d.judgments[0] || {}).model || 'idle';
+  for (const k of ['runner','prometheus','loki','grafana'])
+    $('svc-' + k).dataset.up = String(!!d.stack[k]);
+  document.querySelectorAll('#variants button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.variant === d.variant)));
+
+  const failing = d.probes.filter(p => !p.ok).length;
+  $('n-ov').textContent = failing ? `${failing} red` : 'ok';
+  $('n-ov').dataset.alarm = String(!!failing);
+  $('n-pl').textContent = d.variant === 'baseline' ? '' : 'drifted';
+  $('n-fd').textContent = d.feed.length;
+  const cfr = d.dora.change_failure_rate.value;
+  $('n-dl').textContent = cfr === null ? '' : cfr + '%';
+  $('n-dl').dataset.alarm = String(cfr !== null && cfr > 0);
+
+  const dec = d.verdict ? d.verdict.decision
+    : (d.verdict_gauge === 1 ? 'PASS' : d.verdict_gauge === 0 ? 'HOLD' : '—');
+  $('gate').dataset.d = dec;
+  $('g-dec').textContent = dec;
+  $('g-when').textContent = d.verdict ? `window ${d.verdict.window}\n${d.verdict.ts}` : '';
+  if (d.verdict && d.verdict.reasoning) $('g-text').textContent = d.verdict.reasoning;
+  const why = d.verdict ? (d.verdict.blocking_reasons || []) : [];
+  $('g-why').innerHTML = why.length ? why.map(r => `<li>${esc(r)}</li>`).join('')
+    : `<li data-ok="true">no blocking signals</li>`;
+
+  $('probe-rows').innerHTML = d.probes.map(p => `<tr data-bad="${!p.ok}">
+    <td class="m">${esc(p.probe)}</td><td>${esc(p.workflow)}</td>
+    <td class="state"><span class="sq" data-s="${p.ok ? 'pass' : 'fail'}"></span>${p.ok ? 'pass' : 'FAIL'}</td>
+    <td class="n">${p.p95_ms} ms</td><td class="n">${p.pass}/${p.fail}</td>
+    <td class="m">${esc(p.fingerprint || '—')}</td>
+    <td class="state"><span class="sq" data-s="${esc(p.classification)}"></span>${p.drift_score}${
+      p.classification === 'none' ? '' : ' ' + esc(p.classification)}</td>
+    <td class="m">${esc(p.failing_assertions.join(', ') || '—')}</td></tr>`).join('');
+
+  drawChart(d.series);
+
+  $('rail-steps').innerHTML = liveStages(d).map(stepHTML).join('');
+  const pv = d.payloads || [];
+  $('payload-panel').hidden = pv.length === 0;
+  $('payload').innerHTML = pv.map(v => {
+    const keys = [...new Set([...Object.keys(v.baseline), ...Object.keys(v.current)])];
+    const f = (x) => Array.isArray(x) ? (x.join(' + ') || '—') : (x === null ? '—' : String(x));
+    const rows = keys.map(k => {
+      const a = f(v.baseline[k]), b = f(v.current[k]), moved = a !== b;
+      return `<tr><td class="m">${esc(k)}</td>
+        <td class="n" style="color:var(--ink-3)${moved ? ';text-decoration:line-through' : ''}">${esc(a)}</td>
+        <td class="n" style="${moved ? 'color:var(--crit);font-weight:600' : ''}">${esc(b)}</td></tr>`;
+    }).join('');
+    const banner = v.structure_moved
+      ? `${v.probe} — structure moved. added ${JSON.stringify(v.delta.added)} removed ${JSON.stringify(v.delta.removed)}. The judge fires on the diff.`
+      : `${v.probe} — fingerprint unchanged, ${v.fingerprint_baseline} on both sides. No path added, removed or retyped. Nothing structural to detect; the invariant fired instead.`;
+    return `<p class="banner" data-tone="${v.structure_moved ? 'warn' : 'crit'}">${esc(banner)}</p>
+      <table><thead><tr><th>Quantity</th><th class="n">baseline</th><th class="n">serving now</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  }).join('');
+
+  $('alias-rows').innerHTML = Object.entries(d.alias_map).sort().map(([k, v]) =>
+    `<tr><td class="m">${esc(k)}</td><td class="m" style="${v.length > 1 ? 'color:var(--warn)' : ''}">${esc(v.join('  ·  '))}</td></tr>`).join('');
+  $('counter-rows').innerHTML = [
+    ['ds_self_heal_total{applied}', d.heals.applied],
+    ['ds_self_heal_total{refused}', d.heals.refused],
+    ['ds_self_heal_total{refused_low_confidence}', d.heals.refused_low_confidence],
+    ['ds_manual_edits_total', d.manual_edits],
+    ['probes failing', failing],
+    ['fingerprint changes', d.probes.reduce((a, p) => a + p.fingerprint_changes, 0)],
+  ].map(([k, v]) => `<tr><td class="m">${esc(k)}</td><td class="n">${esc(v)}</td></tr>`).join('');
+
+  const T = d.dora;
+  const tile = (dora, k, m, fmt) => `<div class="tile">
+    <span class="dora">${esc(dora)}</span><span class="k">${esc(k)}</span>
+    <span class="v">${m.value === null ? '—' : esc(fmt ? fmt(m.value) : m.value)}</span>
+    <span class="u">${esc(m.unit)}</span><span class="d">${esc(m.detail)}</span></div>`;
+  $('dora-tiles').innerHTML =
+    tile('deployment frequency', 'change frequency', T.change_frequency) +
+    tile('change failure rate', 'meaning-altering changes', T.change_failure_rate, v => v + '%') +
+    tile('time to restore', 'probe back to green', T.time_to_restore, v => v + 's') +
+    tile('lead time for changes', 'autonomous remediation', T.autonomous_remediation, v => v + '%');
+
+  const mix = T.change_failure_rate.mix || {};
+  const totalMix = Object.values(mix).reduce((a, b) => a + b, 0);
+  const ACTION = {none:'continue', cosmetic:'heal applied, stays green',
+                  semantic:'heal refused, release held', breaking:'heal refused, release held'};
+  $('mix-rows').innerHTML = totalMix ? Object.entries(mix).map(([k, v]) =>
+    `<tr><td class="state"><span class="sq" data-s="${esc(k)}"></span>${esc(k)}</td>
+      <td class="n">${v}</td><td class="n">${Math.round(100 * v / totalMix)}%</td>
+      <td class="m">${esc(ACTION[k] || '')}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">no drift events yet — trigger one from the toolbar</td></tr>`;
+
+  const rs = [...(T.time_to_restore.open || []).map(o => ({...o, open:true})),
+              ...(T.time_to_restore.restored || []).map(o => ({...o, open:false}))];
+  $('restore-rows').innerHTML = rs.length ? rs.reverse().map(r =>
+    `<tr data-bad="${r.open}"><td class="m">${esc(r.probe)}</td><td class="n">${r.seconds}s</td>
+      <td class="state"><span class="sq" data-s="${r.open ? 'fail' : 'pass'}"></span>${
+        r.open ? 'still failing' : 'recovered'}</td></tr>`).join('')
+    : `<tr><td colspan="3" class="empty">no failures in the window</td></tr>`;
+
+  $('feed').innerHTML = d.feed.map(r => {
+    const m = r.rationale || r.justification || r.reasoning || r.actual ||
+      (r.added ? `added ${JSON.stringify(r.added)} removed ${JSON.stringify(r.removed)}` : '') ||
+      (r.status ? `${r.status} · ${r.latency_ms}ms · ${r.fingerprint || ''}` : '');
+    return `<div class="frow" data-k="${esc(r.kind)}"><span class="t">${esc((r.ts || '').slice(11, 19))}</span>
+      <span class="k">${esc(r.kind)}</span>
+      <span class="m">${esc(r.probe !== '-' ? r.probe + ' — ' : '')}${esc(m)}</span></div>`;
+  }).join('') || `<div class="empty">no events in the last 30 minutes</div>`;
+}
+
+async function refresh() {
+  try { render(await (await fetch('/api/state', {cache:'no-store'})).json()); }
+  catch { $('offline').hidden = false; }
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

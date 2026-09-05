@@ -292,6 +292,7 @@
       <span class="svc" id="svc-grafana" data-up="true"><i></i>GRAFANA</span>
       <span class="sp">mode <b id="t-mode">—</b></span>
       <span>judge <b id="t-model">—</b></span>
+      <span id="t-llm" hidden style="color:var(--warn)"></span>
       <span>updated <b id="t-clock">—</b></span>
     </div>
 
@@ -828,7 +829,14 @@ function render(d) {
   $('offline').hidden = true;
   $('t-mode').textContent = `PROBE_MODE=${d.mode}`;
   $('t-clock').textContent = new Date(d.now * 1000).toLocaleTimeString();
-  $('t-model').textContent = (d.judgments[0] || {}).model || 'idle';
+  const L = d.llm || {};
+  $('t-model').textContent = (d.judgments[0] || {}).model || L.model || 'idle';
+  const degraded = L.configured && L.last_error;
+  $('t-llm').hidden = !(degraded || !L.configured);
+  $('t-llm').textContent = degraded
+    ? `${L.provider} unavailable — running on the rule-based classifier`
+    : (!L.configured ? 'no model configured — rule-based classifier' : '');
+  $('t-llm').title = L.last_error || 'set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env';
   for (const k of ['runner','prometheus','loki','grafana'])
     $('svc-' + k).dataset.up = String(!!d.stack[k]);
   document.querySelectorAll('#variants button').forEach(b =>

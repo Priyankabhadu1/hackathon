@@ -126,8 +126,9 @@ def judge(probe: str, delta: Dict[str, List], failures: List[Dict], old_sample, 
         return verdict
 
     prompt = _prompt(probe, delta, failures, old_sample, new_sample)
-    last_error = None
+    last_error, attempts = None, 0
     for attempt in range(3):
+        attempts += 1
         try:
             verdict = _parse(llm.complete(_SYSTEM, prompt, max_tokens=500))
             verdict["model"] = llm.model_name()
@@ -139,7 +140,7 @@ def judge(probe: str, delta: Dict[str, List], failures: List[Dict], old_sample, 
             last_error = exc
             prompt = prompt + f"\n\nYour previous reply was rejected: {exc}. Reply with one JSON object only."
 
-    logs.fail(f"judge failed after 3 attempts: {last_error}", probe=probe)
+    logs.fail(f"judge failed after {attempts} attempt(s): {last_error}", probe=probe)
     verdict = _heuristic(delta, failures)
     verdict["model"] = "heuristic-fallback"
     verdict["rationale"] += " (LLM unavailable)"

@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from src import config, fingerprint as fp
+from src import config, llm, fingerprint as fp
 from src.paths import resolve
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -226,6 +226,12 @@ def snapshot() -> Dict[str, Any]:
                                    if ok == 0 else []),
         })
 
+    # Why the judge is on its fallback, if it is. Read from the log rather than by
+    # calling the provider - a health check on every 2s poll would burn real quota.
+    errors = _loki('{job="driftsentinel", kind="error"}', 3)
+    judge_error = next((r["rec"].get("message", "") for r in errors
+                        if "judge failed" in r["rec"].get("message", "")), None)
+
     verdict_rows = _loki('{job="driftsentinel", kind="verdict"}', 1)
     judgments = _loki('{job="driftsentinel", kind="drift_judgment"}', 6)
     heal_rows = _loki('{job="driftsentinel", kind="heal"}', 6)
@@ -257,6 +263,12 @@ def snapshot() -> Dict[str, Any]:
         "judgments": [r["rec"] for r in judgments],
         "heal_log": [r["rec"] for r in heal_rows],
         "feed": [r["rec"] for r in _loki('{job="driftsentinel"}', 60)],
+        "llm": {
+            "provider": llm.provider(),
+            "model": llm.model_name() if llm.available() else "heuristic-fallback",
+            "configured": llm.available(),
+            "last_error": judge_error,
+        },
         "dora": dora(),
         "series": [
             {"probe": r["metric"].get("probe", "?"),

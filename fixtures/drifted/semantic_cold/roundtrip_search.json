@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "count": 2
+  },
+  "data": [
+    {
+      "type": "flight-offer",
+      "id": "1",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": false,
+      "lastTicketingDate": "2026-11-01",
+      "numberOfBookableSeats": 7,
+      "itineraries": [
+        {
+          "duration": "PT10H30M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "BLR",
+                "at": "2026-11-12T02:30:00"
+              },
+              "arrival": {
+                "iataCode": "FRA",
+                "at": "2026-11-12T08:00:00"
+              },
+              "carrierCode": "LH",
+              "number": "755",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "LH"
+              },
+              "duration": "PT10H30M",
+              "id": "1",
+              "numberOfStops": 0
+            }
+          ]
+        },
+        {
+          "duration": "PT8H45M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "FRA",
+                "at": "2026-11-19T11:20:00"
+              },
+              "arrival": {
+                "iataCode": "BLR",
+                "at": "2026-11-20T01:05:00"
+              },
+              "carrierCode": "LH",
+              "number": "754",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "LH"
+              },
+              "duration": "PT8H45M",
+              "id": "2",
+              "numberOfStops": 0
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "EUR",
+        "total": "389.00",
+        "base": "389.00",
+        "taxes": [
+          {
+            "amount": "123.30",
+            "code": "TOTALTAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "0.00",
+            "type": "SUPPLIER"
+          }
+        ]
+      },
+      "pricingOptions": {
+        "fareType": [
+          "PUBLISHED"
+        ],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": [
+        "LH"
+      ]
+    },
+    {
+      "type": "flight-offer",
+      "id": "2",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": false,
+      "lastTicketingDate": "2026-11-01",
+      "numberOfBookableSeats": 4,
+      "itineraries": [
+        {
+          "duration": "PT12H10M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "BLR",
+                "at": "2026-11-12T04:10:00"
+              },
+              "arrival": {
+                "iataCode": "CDG",
+                "at": "2026-11-12T10:20:00"
+              },
+              "carrierCode": "AF",
+              "number": "191",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "AF"
+              },
+              "duration": "PT12H10M",
+              "id": "3",
+              "numberOfStops": 0
+            }
+          ]
+        },
+        {
+          "duration": "PT9H15M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "CDG",
+                "at": "2026-11-19T13:40:00"
+              },
+              "arrival": {
+                "iataCode": "BLR",
+                "at": "2026-11-20T03:55:00"
+              },
+              "carrierCode": "AF",
+              "number": "192",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "AF"
+              },
+              "duration": "PT9H15M",
+              "id": "4",
+              "numberOfStops": 0
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "EUR",
+        "total": "524.00",
+        "base": "512.00",
+        "taxes": [
+          {
+            "amount": "128.00",
+            "code": "TOTALTAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "12.00",
+            "type": "SUPPLIER"
+          }
+        ]
+      },
+      "pricingOptions": {
+        "fareType": [
+          "PUBLISHED"
+        ],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": [
+        "AF"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "error_list": [
+    "errors"
+  ],
+  "offer.base": [
+    "price.base"
+  ],
+  "offer.currency": [
+    "price.currency"
+  ],
+  "offer.fees": [
+    "price.fees[].amount"
+  ],
+  "offer.segments": [
+    "itineraries[].segments"
+  ],
+  "offer.taxes": [
+    "price.taxes[].amount"
+  ],
+  "offer.total": [
+    "price.total"
+  ],
+  "offer_list": [
+    "data"
+  ]
+}

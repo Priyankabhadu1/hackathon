@@ -1,0 +1,24 @@
+groups:
+  - name: driftsentinel
+    rules:
+      - alert: SemanticDriftDetected
+        expr: ds_drift_score >= 0.7
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "A meaning change landed on probe {{ $labels.probe }}"
+          description: "Classification {{ $labels.classification }}. Release should be held."
+
+      - alert: ProbeWorkflowDown
+        expr: ds_probe_success == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: "Travel workflow {{ $labels.workflow }} failing on probe {{ $labels.probe }}"
+
+      - alert: ProbeStale
+        expr: time() - ds_probe_last_run_timestamp > 180
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: "Probe runner has stopped reporting for {{ $labels.probe }}"

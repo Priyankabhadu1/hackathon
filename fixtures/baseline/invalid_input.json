@@ -1,0 +1,14 @@
+{
+  "errors": [
+    {
+      "status": 400,
+      "code": 477,
+      "title": "INVALID FORMAT",
+      "detail": "originLocationCode must be a 3-letter IATA code",
+      "source": {
+        "parameter": "originLocationCode",
+        "example": "BLR"
+      }
+    }
+  ]
+}

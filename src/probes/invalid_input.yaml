@@ -1,0 +1,12 @@
+name: invalid_input
+workflow: negative_path
+type: api
+risk: low
+tool: flight-offers-search
+params:
+  originLocationCode: XXXX
+  destinationLocationCode: FRA
+  departureDate: "1999-01-01"
+  adults: 0
+assertions:
+  - rejects_invalid_input

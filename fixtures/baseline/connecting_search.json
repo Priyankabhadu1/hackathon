@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "count": 2
+  },
+  "data": [
+    {
+      "type": "flight-offer",
+      "id": "1",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": false,
+      "lastTicketingDate": "2026-11-01",
+      "numberOfBookableSeats": 7,
+      "itineraries": [
+        {
+          "duration": "PT19H05M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "BLR",
+                "at": "2026-11-12T03:05:00"
+              },
+              "arrival": {
+                "iataCode": "FRA",
+                "at": "2026-11-12T08:35:00"
+              },
+              "carrierCode": "LH",
+              "number": "755",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "LH"
+              },
+              "duration": "PT10H30M",
+              "id": "1",
+              "numberOfStops": 0
+            },
+            {
+              "departure": {
+                "iataCode": "FRA",
+                "at": "2026-11-12T10:40:00"
+              },
+              "arrival": {
+                "iataCode": "JFK",
+                "at": "2026-11-12T13:10:00"
+              },
+              "carrierCode": "LH",
+              "number": "400",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "LH"
+              },
+              "duration": "PT8H30M",
+              "id": "2",
+              "numberOfStops": 0
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "EUR",
+        "total": "938.40",
+        "base": "742.00",
+        "taxes": [
+          {
+            "amount": "196.40",
+            "code": "TOTALTAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "0.00",
+            "type": "SUPPLIER"
+          }
+        ]
+      },
+      "pricingOptions": {
+        "fareType": [
+          "PUBLISHED"
+        ],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": [
+        "LH"
+      ]
+    },
+    {
+      "type": "flight-offer",
+      "id": "2",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": false,
+      "lastTicketingDate": "2026-11-01",
+      "numberOfBookableSeats": 9,
+      "itineraries": [
+        {
+          "duration": "PT21H30M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "BLR",
+                "at": "2026-11-12T01:15:00"
+              },
+              "arrival": {
+                "iataCode": "DXB",
+                "at": "2026-11-12T03:50:00"
+              },
+              "carrierCode": "EK",
+              "number": "569",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "EK"
+              },
+              "duration": "PT4H05M",
+              "id": "1",
+              "numberOfStops": 0
+            },
+            {
+              "departure": {
+                "iataCode": "DXB",
+                "at": "2026-11-12T08:30:00"
+              },
+              "arrival": {
+                "iataCode": "JFK",
+                "at": "2026-11-12T14:35:00"
+              },
+              "carrierCode": "EK",
+              "number": "201",
+              "aircraft": {
+                "code": "359"
+              },
+              "operating": {
+                "carrierCode": "EK"
+              },
+              "duration": "PT14H05M",
+              "id": "2",
+              "numberOfStops": 0
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "EUR",
+        "total": "872.20",
+        "base": "688.50",
+        "taxes": [
+          {
+            "amount": "174.20",
+            "code": "TOTALTAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "9.50",
+            "type": "SUPPLIER"
+          }
+        ]
+      },
+      "pricingOptions": {
+        "fareType": [
+          "PUBLISHED"
+        ],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": [
+        "EK"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+name: roundtrip_search
+workflow: flight_search
+type: api
+risk: high
+tool: flight-offers-search
+params:
+  originLocationCode: BLR
+  destinationLocationCode: FRA
+  departureDate: "2026-11-12"
+  returnDate: "2026-11-19"
+  adults: 1
+  currencyCode: EUR
+  max: 5
+assertions:
+  - offers_present
+  - every_offer_has_total_price
+  - currency_is_iso4217
+  - price_components_sum
+  - itinerary_segments_present

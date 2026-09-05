@@ -21,11 +21,15 @@ Schema diffing passes. Contract tests pass. Consumers — increasingly AI agents
 ## Quick start
 
 ```bash
-cp .env.example .env          # fill in credentials
+cp .env.example .env          # PROBE_MODE=replay works with no credentials at all
 pip install -r requirements.txt
 cd infra && docker compose up -d && cd ..
 python -m src.runner
 ```
+
+Runs offline out of the box: `replay` mode serves fixtures, and with no `ANTHROPIC_API_KEY` the
+judge falls back to a rule-based classifier labelled `heuristic-fallback` in the logs. Add the key
+for real judgments, add Amadeus credentials and `PROBE_MODE=live` for real traffic.
 
 | Service | URL |
 |---|---|
@@ -33,7 +37,13 @@ python -m src.runner
 | Prometheus | http://localhost:9090 |
 | Runner metrics | http://localhost:8000/metrics |
 
-Demo drift trigger: `./scripts/trigger_drift.sh semantic`
+Demo sequence — the two chain deliberately, no reset in between:
+
+```bash
+./scripts/trigger_drift.sh cosmetic   # price.total -> price.grandTotal · heals, stays green
+./scripts/trigger_drift.sh semantic   # grandTotal drops tax · identical fingerprint · REFUSED
+./scripts/trigger_drift.sh baseline   # reset alias map and fingerprint state
+```
 
 ## How it works
 
@@ -62,8 +72,8 @@ number that lands in Prometheus.** Drift score is a lookup on a classification e
 | [docs/DECISIONS.md](docs/DECISIONS.md) | When tempted to revisit a settled trade-off |
 | [CHANGELOG.md](CHANGELOG.md) | Every change, one line |
 
-Skills in `.claude/skills/`: `probe-authoring` · `semantic-drift-judge` · `observability-wiring` ·
-`release-verdict`
+Skills in `.claude/skills/`: `probe-authoring`. The other three named in `CLAUDE.md`
+(`semantic-drift-judge`, `observability-wiring`, `release-verdict`) are not written yet.
 
 ## Coverage against the brief
 

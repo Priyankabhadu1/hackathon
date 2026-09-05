@@ -1,0 +1,15 @@
+name: hotel_search
+workflow: hotel_search
+type: api
+risk: medium
+tool: hotel-search
+params:
+  cityCode: BLR
+  checkInDate: "2026-11-12"
+  checkOutDate: "2026-11-14"
+  adults: 1
+  currency: EUR
+assertions:
+  - offers_present
+  - every_offer_has_total_price
+  - currency_is_iso4217

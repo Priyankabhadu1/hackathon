@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "count": 2
+  },
+  "data": [
+    {
+      "type": "hotel-offer",
+      "id": "BLRAT001",
+      "hotel": {
+        "hotelId": "BLRAT001",
+        "name": "THE PARK BANGALORE",
+        "cityCode": "BLR",
+        "rating": "4"
+      },
+      "available": true,
+      "room": {
+        "type": "A1K",
+        "typeEstimated": {
+          "category": "DELUXE_ROOM",
+          "beds": 1,
+          "bedType": "KING"
+        }
+      },
+      "checkInDate": "2026-11-12",
+      "checkOutDate": "2026-11-14",
+      "price": {
+        "currency": "EUR",
+        "total": "201.60",
+        "base": "180.00",
+        "taxes": [
+          {
+            "amount": "21.60",
+            "code": "CITY_TAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "0.00",
+            "type": "SERVICE"
+          }
+        ]
+      }
+    },
+    {
+      "type": "hotel-offer",
+      "id": "BLRIT452",
+      "hotel": {
+        "hotelId": "BLRIT452",
+        "name": "ITC GARDENIA",
+        "cityCode": "BLR",
+        "rating": "4"
+      },
+      "available": true,
+      "room": {
+        "type": "A1K",
+        "typeEstimated": {
+          "category": "DELUXE_ROOM",
+          "beds": 1,
+          "bedType": "KING"
+        }
+      },
+      "checkInDate": "2026-11-12",
+      "checkOutDate": "2026-11-14",
+      "price": {
+        "currency": "EUR",
+        "total": "303.68",
+        "base": "264.00",
+        "taxes": [
+          {
+            "amount": "31.68",
+            "code": "CITY_TAX"
+          }
+        ],
+        "fees": [
+          {
+            "amount": "8.00",
+            "type": "SERVICE"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -2,75 +2,134 @@
 
 ## Pre-flight (10 min before)
 
-- [ ] `docker compose up -d` — all four containers healthy
-- [ ] `python -m src.runner` running, probes green for at least 3 minutes (need history on the graph)
-- [ ] Grafana open, **D1 Workflow Health** as the visible tab, time range last 30m, refresh 5s
-- [ ] Second browser tab on **D2 Drift Timeline**, third on **D3 Release Verdict**
-- [ ] Terminal ready with `./scripts/trigger_drift.sh cosmetic` typed but not entered
-- [ ] Second terminal line ready with `./scripts/trigger_drift.sh semantic` (run it *after* the
-      cosmetic heal has landed — the two chain deliberately, no reset in between)
-- [ ] Laptop on the projector, notifications off, font size up
+- [ ] `docker compose -f infra/docker-compose.yml up -d` — four containers healthy
+- [ ] `python -m src.runner` running, probes green for **at least 3 minutes** so the chart has history
+- [ ] `python -m ui.server` running
+- [ ] Console open at **http://localhost:8090**, on the **Overview** view, variant `baseline`
+- [ ] Verdict reads **PASS**. If it reads HOLD from an earlier rehearsal, wipe the window:
+      `docker compose -f infra/docker-compose.yml rm -sf prometheus && docker compose -f infra/docker-compose.yml up -d prometheus`
+- [ ] Grafana in a second browser tab, for anyone who asks to see it
+- [ ] Notifications off, font size up, laptop on the projector
 
-## The script
+Everything is driven from buttons in the console. No terminal on screen.
 
-**0:00 — The setup (30s)**
-> "Everyone here will show you an AI that fixes a broken XPath. That's a solved product category.
-> We asked the harder question in the brief: what breaks when the software is being *written* by AI?
-> The answer is that structure stays valid while meaning quietly changes — and nothing in your
-> pipeline is testing for that."
+## The script — five minutes
 
-**0:30 — Live health (45s)**
-Show **D1**.
-> "These are live probes against Amadeus MCP. Not endpoint pings — travel workflows: a round-trip
-> search, a connecting-flight search, a hotel search, and a deliberate invalid input. Success rate
-> and p95 latency per workflow. This is the API Testing box in this morning's architecture."
+Timings are cumulative. Every action is a click in the console toolbar.
 
-**1:15 — A change arrives, and heals itself (60s)**
-Run `./scripts/trigger_drift.sh cosmetic`.
-> "A service ships. An AI assistant refactored the pricing helper and `price.total` is now
-> `price.grandTotal`. Same money, new name."
+### 0:00 · The problem (35s)
 
-Switch to **D2**. Point at the small drift blip and the heals-applied counter.
-> "Fingerprint moved, so the judge ran. It read the structural diff, called it a rename, and the
-> healer remapped the intent 'an offer exposes a total price' onto the new path. The probe never
-> went red. Zero human edits."
+Say this before showing anything.
 
-Click the heal line in Loki and read the justification aloud.
+> "Everyone here will show you an AI that repairs a broken selector. That is a solved commercial
+> category. We asked the harder half of the brief: what breaks when the software is being *written*
+> by AI?
+>
+> The answer is that structure stays valid while meaning quietly changes. An AI assistant
+> refactoring code is optimising for one thing — the tests still pass. Test suites check shape. So
+> shape is what gets preserved, and meaning is the one dimension nobody is constraining. And on the
+> other end, the consumer is increasingly an agent that will never raise an eyebrow at a total that
+> looks light. The human safety net is being removed from both ends of the pipe at once."
 
-**2:15 — The change that must not heal (75s)**
-Run `./scripts/trigger_drift.sh semantic`.
-> "Now the same helper ships again. This time every field name is identical to what you just
-> watched us heal to. The schema is valid. The types are right. The response parses."
+### 0:35 · Steady state (35s)
 
-Point at the fingerprint on D1 — unchanged.
-> "The fingerprint is byte-identical. Structural drift detection sees nothing. Contract testing
-> sees nothing. Watch what happens anyway."
+**Overview** view.
 
-Drift spikes to 0.7 and the probe goes red.
-> "It was caught by an invariant, not a schema: an offer total must equal base plus taxes plus
-> fees. That relation holds whatever the fare is, so it survives an API whose prices move on every
-> call. Here it stopped holding — 389 where 512.30 was owed. Tax quietly left the total."
+> "Four probes against Amadeus MCP. Not endpoint pings — travel workflows. A return search, a
+> connecting flight, a hotel search, and a deliberately malformed request that has to be *rejected*.
+> All green, release gate says PASS. The judge has not been called once — steady state costs a hash
+> comparison."
 
-**3:30 — The refusal (30s)**
-Show the heal panel: applied 1, **refused 1**.
-> "And here is the part that matters. It healed the rename. It refused to heal this. A self-healing
-> framework that repairs a meaning change turns a caught bug into a green build. Cosmetic heals.
-> Semantic never does."
+### 1:10 · A change arrives, and heals itself (60s)
 
-**4:00 — The verdict (35s)**
-Switch to **D3**.
-> "And this is Release Decision, generated from the telemetry you just watched — not a template."
+Click **cosmetic rename**. Wait one cycle.
 
-Read the HOLD verdict aloud.
+> "A service ships. The pricing helper was refactored and `price.grandTotal` is now
+> `price.totalPayable`. Same money, new name."
 
-**4:45 — Close (15s)**
+Switch to **Pipeline**.
+
+> "The fingerprint moved, so the judge ran. It read the structural diff, called it a rename, and the
+> healer remapped the *intent* — 'an offer exposes a total price' — onto the new path. Look at the
+> alias map: the new path is prepended, the old one kept as a fallback. The probe never went red.
+> Zero human edits."
+
+### 2:10 · The change that must not heal (80s)
+
+Click **semantic drift**. Stay on **Pipeline**.
+
+> "The same helper ships again. Every field name is identical to what you just watched us heal to.
+> Valid schema, correct types, the response parses."
+
+Point at the red banner above the payload table.
+
+> "The fingerprint is unchanged. Byte for byte — the same hash on both sides. Structural change
+> detection sees nothing here. Contract testing sees nothing. Schema validation passes."
+
+Point at the payload table, where `total` is struck through and the new value is red.
+
+> "It was caught by an invariant instead: an offer total must equal base plus taxes plus fees. That
+> relation holds whatever the fare is, which is how you test an API whose prices move on every call.
+> Here it stopped holding. 389 where 512.30 was owed — 123 euros of tax quietly left the total."
+
+Scroll to the healer stage.
+
+> "And here is the part that matters. It healed the rename. It **refuses** to heal this, and says
+> why in writing. A self-healing framework that repairs a meaning change turns a caught defect into
+> a green build — worse than having no healing at all. Cosmetic heals. Semantic never does."
+
+### 3:30 · Inside the four milliseconds (45s)
+
+**Simulator** view. Prior `cosmetic`, receives `semantic`. Click **Run one cycle**, then **Play**.
+
+> "All of that happened in about four milliseconds across six modules, so here it is stepped out.
+> Same functions, run in a sandbox. Watch which branch lights up — the structural detector reports
+> no change, so the judge is woken by the *invariant* path instead. The cosmetic branch never fires.
+> Every value on screen is the real input and output of that stage."
+
+### 4:15 · The decision (30s)
+
+**Delivery** view.
+
+> "Change failure rate: the share of changes to this API that altered meaning rather than shape.
+> That is DORA's metric, pointed at the dependency instead of at our own pipeline — and it is a
+> number no consumer of a third-party API currently has."
+
+Back to **Overview** for the HOLD.
+
+> "The release gate is deterministic. Hard rules make the call; the model only writes the note and
+> is explicitly told it cannot change the decision. Unreachable telemetry is itself a blocking
+> reason, so it fails closed."
+
+### 4:45 · Close (15s)
+
 > "Change detection, self-healing, business intent, explainable insights, release decision — five of
-> the five bullets, running on the observability stack you'd already have in production. One
+> the five bullets, running on the observability stack you would already have in production. One
 > assertion remapped automatically, one refused on purpose, zero human edits either way."
 
-On the 70–80% goal, claim the instrument, not the result. `ds_manual_edits_total` is a real counter
-that read zero through the incident; four hours of demo data is not a measurement of a maintenance
-reduction, and a judge who builds platforms will respect the distinction more than the round number.
+## If you have two minutes, not five
+
+Cut to three beats: the problem (0:00), **cosmetic rename** healing itself, **semantic drift**
+refusing to heal on an identical fingerprint. Skip the simulator and Delivery entirely. The
+identical hash is the whole argument; everything else is supporting evidence.
+
+## If you have ten minutes
+
+Add, in this order: **validation swallowed** (a second probe, a different failure class), then
+**everything in cents** (the case the sum invariant cannot catch, and the plausibility band that
+can), then the **Stack** view for what each service is doing, then stop Prometheus to show the gate
+failing closed.
+
+## Handling interruptions
+
+- **Asked a question mid-flow?** Answer it, then say "let me show you" and continue from where you
+  were. The console is live; nothing is on rails.
+- **Something goes red unexpectedly?** Say what you see. The system is a detector — a genuine
+  detection during a demo is a feature, not a failure.
+- **The model is on `heuristic-fallback`?** Get ahead of it: "no API credit today, so the judge is
+  on its deterministic classifier. That is the designed fallback — the pipeline degrades in quality
+  of explanation, not in correctness. Same classification, same refusal."
+- **Running behind?** Drop the simulator. Never drop the semantic refusal.
 
 ## The scenario menu
 

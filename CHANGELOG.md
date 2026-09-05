@@ -17,6 +17,7 @@ Entries are one line, plain English. Update `[Unreleased]` as you work; cut a ve
 - Full observability stack: Prometheus with alert rules, Loki, Promtail, Grafana with D1/D2/D3
 - Fixtures for baseline, cosmetic rename, and two semantic variants; `scripts/trigger_drift.sh`
 - Fingerprint smoke tests
+- `docs/EXPLAINER.md` — the project taught from scratch, for anyone presenting it
 - Confidence floor on healing: a cosmetic call under 0.7 is refused rather than applied (D10)
 - Local console at `ui/` — live pipeline trace and drift controls read from Prometheus and Loki (D12)
 - `price_within_plausible_range`, an absolute invariant that catches what the sum invariant cannot (D13)

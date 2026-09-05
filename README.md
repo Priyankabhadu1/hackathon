@@ -66,6 +66,7 @@ number that lands in Prometheus.** Drift score is a lookup on a classification e
 
 | Doc | Read it when |
 |---|---|
+| [docs/EXPLAINER.md](docs/EXPLAINER.md) | **Start here.** The whole project from scratch, in plain language |
 | [CLAUDE.md](CLAUDE.md) | Start of every AI coding session — working agreement and hard constraints |
 | [docs/PROBLEM_STATEMENT.md](docs/PROBLEM_STATEMENT.md) | Understanding the brief and what we chose to scope out |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component design, data flow, mapping to the session's reference architecture |

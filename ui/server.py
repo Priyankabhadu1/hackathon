@@ -342,6 +342,62 @@ def dora(minutes: int = 60) -> Dict[str, Any]:
     }
 
 
+def _json_get(url: str, params: Dict[str, Any] = None) -> Any:
+    try:
+        r = httpx.get(url, params=params or {}, timeout=4.0)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+
+def stack() -> Dict[str, Any]:
+    """What each backing service is doing right now.
+
+    Every claim on the Stack view is a live read, not a caption: if Prometheus is
+    scraping, the target says so; if the alert rules loaded, they are listed with
+    their state; if Loki holds the reasoning, the counts per log kind prove it.
+    """
+    targets = _json_get(f"{config.PROMETHEUS_URL}/api/v1/targets") or {}
+    active = (targets.get("data") or {}).get("activeTargets", [])
+    rules_doc = _json_get(f"{config.PROMETHEUS_URL}/api/v1/rules") or {}
+    rules = [
+        {"name": r.get("name"), "state": r.get("state"), "health": r.get("health"),
+         "expr": r.get("query", "")}
+        for g in (rules_doc.get("data") or {}).get("groups", [])
+        for r in g.get("rules", [])
+    ]
+    names = _json_get(f"{config.PROMETHEUS_URL}/api/v1/label/__name__/values") or {}
+    ds_series = [n for n in (names.get("data") or []) if n.startswith("ds_")]
+
+    kinds_doc = _json_get(
+        f"{config.LOKI_URL}/loki/api/v1/query",
+        {"query": 'sum by (kind) (count_over_time({job="driftsentinel"}[30m]))'}) or {}
+    kinds = {r["metric"].get("kind", "?"): int(float(r["value"][1]))
+             for r in (kinds_doc.get("data") or {}).get("result", [])}
+
+    boards = _json_get("http://localhost:3000/api/search", {"type": "dash-db"}) or []
+
+    return {
+        "prometheus": {
+            "up": bool(active),
+            "scrape_interval": "5s",
+            "targets": [{"job": t["labels"].get("job"), "url": t.get("scrapeUrl"),
+                         "health": t.get("health"), "error": t.get("lastError", "")}
+                        for t in active],
+            "rules": rules,
+            "metric_names": sorted(ds_series),
+        },
+        "loki": {"up": bool(kinds), "kinds": kinds, "window": "30m"},
+        "grafana": {
+            "up": bool(boards),
+            "dashboards": [{"title": b.get("title"),
+                            "url": "http://localhost:3000" + b.get("url", "")}
+                           for b in boards if isinstance(b, dict)],
+        },
+    }
+
+
 class Console(ThreadingHTTPServer):
     allow_reuse_address = True
     daemon_threads = True
@@ -371,6 +427,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, fh.read(), "text/html; charset=utf-8")
         elif path == "/api/state":
             self._json(snapshot())
+        elif path == "/api/stack":
+            self._json(stack())
         else:
             self._send(404, b"not found", "text/plain")
 

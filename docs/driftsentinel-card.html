@@ -1,0 +1,106 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161d26; --sunk:#0f151c;
+    --rule:#2a3542; --ink:#e8edf3; --ink2:#aab5c1; --ink3:#7b8794;
+    --good:#4cbb7f; --crit:#e8776b; --accent:#6ba6dc;
+    --mono:"IBM Plex Mono",Menlo,monospace;
+    --sans:"IBM Plex Sans",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:1005px}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+       padding:50px 58px 44px;display:flex;flex-direction:column}
+
+  .eyebrow{font-family:var(--mono);font-size:20px;letter-spacing:.22em;color:var(--accent);
+           text-transform:uppercase;margin-bottom:20px}
+  h1{font-size:56px;line-height:1.1;font-weight:700;letter-spacing:-.022em;max-width:19ch}
+  h1 span{color:var(--ink3)}
+  .sub{font-size:25px;color:var(--ink2);margin-top:20px;line-height:1.45;max-width:44ch}
+
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px}
+  .card{background:var(--panel);border:2px solid var(--rule);border-radius:6px;overflow:hidden}
+  .card.bad{border-color:var(--crit)}
+  .card .hd{padding:15px 24px;border-bottom:1px solid var(--rule);font-family:var(--mono);
+            font-size:19px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .card.bad .hd{color:var(--crit)}
+  .card .body{padding:22px 24px 24px;font-family:var(--mono);font-size:25px;line-height:1.85}
+  .k{color:var(--ink3)}
+  .v{color:var(--ink)}
+  .v.hot{color:var(--crit);font-weight:600}
+  .v.ok{color:var(--good);font-weight:600}
+  .strike{color:var(--ink3);text-decoration:line-through}
+
+  .hashrow{margin-top:26px;background:var(--sunk);border:2px solid var(--rule);border-radius:6px;
+           padding:22px 26px;display:flex;align-items:center;gap:22px}
+  .hashrow .lbl{font-family:var(--mono);font-size:19px;color:var(--ink3);
+                letter-spacing:.09em;text-transform:uppercase;line-height:1.4}
+  .hashrow .h{font-family:var(--mono);font-size:36px;font-weight:600;color:var(--ink);
+              letter-spacing:-.01em;margin-left:auto;white-space:nowrap}
+
+  .vhead{font-family:var(--mono);font-size:18px;letter-spacing:.13em;text-transform:uppercase;
+         color:var(--ink3);margin-top:30px}
+  .verdicts{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:16px}
+  .vd{border-left:5px solid var(--good);padding:4px 0 4px 20px}
+  .vd.stop{border-left-color:var(--crit)}
+  .vd .t{font-family:var(--mono);font-size:20px;letter-spacing:.06em;text-transform:uppercase;
+         color:var(--good);margin-bottom:7px}
+  .vd.stop .t{color:var(--crit)}
+  .vd .d{font-size:22px;color:var(--ink2);line-height:1.45}
+
+  footer{margin-top:auto;padding-top:26px;border-top:1px solid var(--rule);
+         display:flex;align-items:baseline;gap:18px}
+  .brand{font-size:27px;font-weight:700;letter-spacing:-.01em}
+  .brand em{font-style:normal;color:var(--accent)}
+  .tag{font-family:var(--mono);font-size:19px;color:var(--ink3);margin-left:auto;text-align:right;
+       line-height:1.5}
+</style></head>
+<body>
+  <div class="eyebrow">Semantic drift</div>
+  <h1>The schema still passes.<br><span>The price is wrong.</span></h1>
+  <p class="sub">An AI refactor rewrote a pricing helper. Same fields, same types,
+     same structure. €123.30 of tax quietly left the total.</p>
+
+  <div class="pair">
+    <div class="card">
+      <div class="hd">before</div>
+      <div class="body">
+        <span class="k">base</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">"389.00"</span><br>
+        <span class="k">taxes</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">"123.30"</span><br>
+        <span class="k">total</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="v ok">"512.30"</span>
+      </div>
+    </div>
+    <div class="card bad">
+      <div class="hd">after</div>
+      <div class="body">
+        <span class="k">base</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">"389.00"</span><br>
+        <span class="k">taxes</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">"123.30"</span><br>
+        <span class="k">total</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="v hot">"389.00"</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hashrow">
+    <div class="lbl">structural fingerprint<br>identical on both sides</div>
+    <div class="h">01346094f2a2df1c</div>
+  </div>
+
+  <div class="vhead">What the system does with each kind of change</div>
+  <div class="verdicts">
+    <div class="vd">
+      <div class="t">a field was renamed</div>
+      <div class="d">Meaning intact. Assertion remapped automatically. Zero human edits.</div>
+    </div>
+    <div class="vd stop">
+      <div class="t">a meaning changed</div>
+      <div class="d">Heal refused on principle. Probe fails, release held.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="brand">Drift<em>Sentinel</em></div>
+    <div class="tag">Autonomous Quality Engineering<br>Amadeus Labs Bengaluru</div>
+  </footer>
+</body></html>

@@ -30,6 +30,8 @@ Entries are one line, plain English. Update `[Unreleased]` as you work; cut a ve
 - Simulator draws the architecture and walks the real path through it, branch by branch, with the
   untaken edges faded — play, or step one stage at a time
 - Drift-score timeline whose y axis is the classification enum, with a validated four-series palette
+- Stack view: what Prometheus, Loki and Grafana are each doing, proved by live reads rather than
+  captions, plus the honest Kubernetes position
 - `.gitignore`; `__pycache__` and `fixtures/state.json` are no longer tracked
 
 ### Fixed

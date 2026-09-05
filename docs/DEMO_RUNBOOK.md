@@ -177,6 +177,29 @@ someone reviews, not a number arriving in Prometheus.
 Probes are typed and pluggable — same runner, same metrics, same judge. We built the API type and the
 latency slice; the others are the same shape of work, not a different architecture.
 
+**"What is Prometheus / Loki / Grafana actually doing here?"**
+Open the **Stack** view rather than answering from memory — every figure on it is a live read.
+Prometheus: the scrape target reporting UP, the interval, the count of `ds_` series, and the three
+alert rules with their current state. Loki: the count of log lines by kind over the last 30 minutes,
+which is the proof that the reasoning is stored and not just printed. Grafana: the three dashboards,
+provisioned as JSON from the repo rather than clicked together. The line to use is *Prometheus holds
+the numbers, Loki holds the sentences.*
+
+**"Do you use Kubernetes?"**
+No, and say so plainly — it is an explicit anti-goal in the build plan, next to "no database". Then
+turn it round: the runner is already cluster-shaped. A stateless loop with `/metrics` on :8000 is a
+Deployment plus a ServiceMonitor; all config is environment variables, so a ConfigMap and a Secret;
+logs are single-line JSON on stdout, which is what a cluster collector expects, so Promtail becomes
+a DaemonSet with no code change; probes are declarative YAML. Volunteer the blocker before they find
+it: the runner keeps local file state in `fixtures/state.json` and `fixtures/alias_map.json`, so
+today it is one replica. A PersistentVolumeClaim deploys it as-is; horizontal scaling needs that
+state moved out first. The Stack view has all of this on screen.
+
+**"Prove the telemetry is live and not staged."**
+Stop the Prometheus container. Within one gate cycle the verdict flips to HOLD with
+`prometheus unreachable - cannot evaluate release safety`, because the gate fails closed. Thirty
+seconds, and it demonstrates the whole chain at once.
+
 **"Why Amadeus specifically?"**
 Because the semantics are travel semantics. `refundable`, `totalPrice` composition, `CONFIRMED`
 before versus after ticketing — those carry money and legal meaning, and a generic QA vendor has no

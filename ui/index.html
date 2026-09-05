@@ -238,6 +238,28 @@
   }
   @keyframes march{to{stroke-dashoffset:-12}}
 
+  /* ---- stack ---- */
+  .svcgrid{display:grid;gap:1px;background:var(--rule-soft)}
+  @media (min-width:1000px){.svcgrid{grid-template-columns:repeat(3,1fr)}}
+  .svc-card{background:var(--panel);padding:15px 17px 17px;display:grid;gap:9px;align-content:start}
+  .svc-card .top{display:flex;align-items:baseline;gap:9px}
+  .svc-card .nm{font-size:14px;font-weight:600}
+  .svc-card .port{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:auto}
+  .svc-card .role{color:var(--ink-2);font-size:12.5px;line-height:1.5;margin:0}
+  .svc-card .reads{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);line-height:1.6}
+  .svc-card .reads b{color:var(--ink-2);font-weight:500}
+  .proof{border-top:1px dashed var(--rule-soft);padding-top:9px;display:grid;gap:4px}
+  .proof .ph{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--good)}
+  .proof .pr{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:11px}
+  .proof .pr span:first-child{color:var(--ink-3)}
+  .proof .pr span:last-child{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
+  .proof .pr[data-alarm="true"] span:last-child{color:var(--crit)}
+  .k8s{display:grid;gap:14px}
+  @media (min-width:900px){.k8s{grid-template-columns:1fr 1fr}}
+  .k8s ul{margin:0;padding-left:17px;display:grid;gap:5px}
+  .k8s li{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+  .k8s li b{color:var(--ink);font-weight:600}
+
   /* ---- feed ---- */
   .frow{display:grid;grid-template-columns:62px 126px minmax(0,1fr);gap:12px;padding:5px 14px;
         border-bottom:1px solid var(--rule-soft);font-family:var(--mono);font-size:11px;
@@ -273,6 +295,7 @@
       <button data-view="simulator">Simulator</button>
       <button data-view="delivery">Delivery <span class="ct" id="n-dl"></span></button>
       <button data-view="feed">Event feed <span class="ct" id="n-fd"></span></button>
+      <button data-view="stack">Stack <span class="ct" id="n-st"></span></button>
     </nav>
     <div class="railfoot">
       <a href="http://localhost:3000" target="_blank" rel="noreferrer">Grafana</a><br>
@@ -420,6 +443,53 @@
           <div class="pbody tight"><table>
             <thead><tr><th>Probe</th><th class="n">Red for</th><th>Status</th></tr></thead>
             <tbody id="restore-rows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-view="stack">
+      <div class="panel">
+        <div class="phead"><h2>What each service is actually doing</h2>
+          <span class="sub">every figure below is a live read, not a caption</span></div>
+        <div class="svcgrid" id="svcgrid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead"><h2>Prometheus alert rules</h2>
+          <span class="sub">infra/prometheus/rules.yml, loaded and evaluating</span></div>
+        <div class="pbody tight"><table>
+          <thead><tr><th>Alert</th><th>State</th><th>Expression</th></tr></thead>
+          <tbody id="rule-rows"></tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead"><h2>Kubernetes</h2>
+          <span class="sub">not deployed — a deliberate anti-goal for a four-hour build</span></div>
+        <div class="pbody">
+          <p style="margin:0 0 13px;color:var(--ink-2);max-width:88ch">
+            We did not use Kubernetes, and we did not pretend to. What we did instead was keep the
+            runner in the shape a cluster expects, so adopting it is a deployment concern rather
+            than a rewrite.
+          </p>
+          <div class="k8s">
+            <div>
+              <div class="lab" style="margin-bottom:7px">Already cluster-shaped</div>
+              <ul>
+                <li><b>Stateless loop with /metrics on :8000</b> — a Deployment plus a ServiceMonitor. The Prometheus Operator scrapes it unchanged.</li>
+                <li><b>All config is environment variables</b> — a ConfigMap and a Secret. Nothing is hardcoded.</li>
+                <li><b>Single-line JSON logs to stdout</b> — exactly what a cluster collector expects. Promtail tails a file here; a DaemonSet reads stdout there, and our code does not change.</li>
+                <li><b>Probes are declarative YAML</b> — a ConfigMap, or a CRD if you wanted <code>kubectl get probes</code>.</li>
+              </ul>
+            </div>
+            <div>
+              <div class="lab" style="margin-bottom:7px">The honest blocker</div>
+              <ul>
+                <li>The runner keeps two pieces of <b>local file state</b>: <code>fixtures/state.json</code> holds last-known-good fingerprints, and <code>fixtures/alias_map.json</code> is written by the healer.</li>
+                <li>Today that means <b>one replica</b>. A PersistentVolumeClaim would let it deploy as-is; horizontal scaling needs that state moved out first.</li>
+                <li>That is a known limit, not an oversight — it is the same reason the decision log says no database.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -941,6 +1011,59 @@ function render(d) {
       <span class="m">${esc(r.probe !== '-' ? r.probe + ' — ' : '')}${esc(m)}</span></div>`;
   }).join('') || `<div class="empty">no events in the last 30 minutes</div>`;
 }
+
+const SERVICES = {
+  prometheus: {nm:'Prometheus', port:':9090',
+    role:'The time-series database. Every number the system produces lands here — and every one of them is computed by code, never by the model.',
+    reads:'read by <b>src/verdict.py</b> (five PromQL queries per release decision), Grafana, and this console'},
+  loki: {nm:'Loki', port:':3100',
+    role:'The log database. Prometheus holds numbers; Loki holds sentences — every model rationale and heal justification, stored next to the payload it judged.',
+    reads:'written by <b>Promtail</b> tailing the runner\'s JSON log · read by the release gate, Grafana and this console'},
+  grafana: {nm:'Grafana', port:':3000',
+    role:'The operator view. Reads both datasources. Dashboards are provisioned as JSON from the repo — none of it was clicked together by hand.',
+    reads:'D2 shows heals <b>applied</b> and heals <b>refused</b> as equal-weight panels — the thesis rendered as a dashboard'},
+};
+
+async function refreshStack() {
+  let d;
+  try { d = await (await fetch('/api/stack', {cache:'no-store'})).json(); } catch { return; }
+  const P = d.prometheus, L = d.loki, G = d.grafana;
+
+  const proof = (title, rows) => `<div class="proof"><div class="ph">${esc(title)}</div>${
+    rows.map(([k, v, alarm]) => `<div class="pr" data-alarm="${!!alarm}"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}</div>`;
+
+  const cards = [];
+  cards.push({...SERVICES.prometheus, up: P.up, proof: proof('live proof', [
+    ...P.targets.map(t => [`target ${t.job}`, t.health.toUpperCase(), t.health !== 'up']),
+    ['scrape interval', P.scrape_interval],
+    ['ds_ series stored', P.metric_names.length],
+    ['alert rules loaded', P.rules.length],
+  ])});
+  const kinds = Object.entries(L.kinds).sort((a, b) => b[1] - a[1]);
+  cards.push({...SERVICES.loki, up: L.up, proof: proof(`log lines, last ${L.window}`,
+    kinds.length ? kinds.map(([k, v]) => [k, v]) : [['no lines yet', '0']])});
+  cards.push({...SERVICES.grafana, up: G.up, proof: proof('provisioned dashboards',
+    G.dashboards.length ? G.dashboards.map(b => [b.title.replace(/·/g, '·'), 'open'])
+                        : [['none found', '—']])});
+
+  $('svcgrid').innerHTML = cards.map(c => `<div class="svc-card">
+    <div class="top"><span class="sq" data-s="${c.up ? 'pass' : 'fail'}"></span>
+      <span class="nm">${esc(c.nm)}</span><span class="port">${esc(c.port)}</span></div>
+    <p class="role">${esc(c.role)}</p>
+    <div class="reads">${c.reads}</div>
+    ${c.proof}</div>`).join('');
+
+  $('rule-rows').innerHTML = P.rules.map(r => `<tr data-bad="${r.state === 'firing'}">
+    <td class="m">${esc(r.name)}</td>
+    <td class="state"><span class="sq" data-s="${r.state === 'firing' ? 'fail' : 'pass'}"></span>${esc(r.state)}</td>
+    <td class="m">${esc(r.expr)}</td></tr>`).join('')
+    || `<tr><td colspan="3" class="empty">no rules loaded</td></tr>`;
+
+  $('n-st').textContent = [P.up, L.up, G.up].filter(Boolean).length + '/3';
+  $('n-st').dataset.alarm = String(![P.up, L.up, G.up].every(Boolean));
+}
+setInterval(refreshStack, 5000);
+refreshStack();
 
 async function refresh() {
   try { render(await (await fetch('/api/state', {cache:'no-store'})).json()); }

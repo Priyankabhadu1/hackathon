@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+logs/*.log
+fixtures/state.json
+.DS_Store

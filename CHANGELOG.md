@@ -17,12 +17,38 @@ Entries are one line, plain English. Update `[Unreleased]` as you work; cut a ve
 - Full observability stack: Prometheus with alert rules, Loki, Promtail, Grafana with D1/D2/D3
 - Fixtures for baseline, cosmetic rename, and two semantic variants; `scripts/trigger_drift.sh`
 - Fingerprint smoke tests
+- Confidence floor on healing: a cosmetic call under 0.7 is refused rather than applied (D10)
+- Local console at `ui/` — live pipeline trace and drift controls read from Prometheus and Loki (D12)
+- `price_within_plausible_range`, an absolute invariant that catches what the sum invariant cannot (D13)
+- Three drift scenarios: validation swallowed, hotel total in cents, everything in cents
+- `src/llm.py` — the judge runs on Anthropic, any OpenAI-compatible endpoint, or a local Ollama (D14)
+- Console shows the quantities the judge is reading, and says outright when the fingerprint did not move
+- Console rebuilt as a five-view operations console: overview, pipeline, simulator, delivery, feed
+- Delivery view reports DORA's four metrics against the dependency rather than our own pipeline (D15)
+- Step-through simulator: one probe cycle, every stage's input, output, timing and log lines (D16)
+- Simulator draws the architecture and walks the real path through it, branch by branch, with the
+  untaken edges faded — play, or step one stage at a time
+- Drift-score timeline whose y axis is the classification enum, with a validated four-series palette
+- `.gitignore`; `__pycache__` and `fixtures/state.json` are no longer tracked
 
 ### Fixed
 - Fallback classifier read invariants before structure, so a rename was labelled semantic (see D9)
+- `scripts/trigger_drift.sh` was not executable, so the documented demo command failed on a clone
+- Fallback classifier returned `none` for any broken invariant other than the price sum, leaving a
+  red probe scored 0.0; it now treats a failing intent with no structural signal as semantic
+- Console listed every assertion that had ever failed, because the counter never comes back down
+- Console showed a failing intent beside a passing probe while the counter window trailed a recovery
+- Chart stacked its direct labels on top of each other whenever probes rested at the same score
+- Release gate raised a spurious HOLD for ~40s after a Prometheus restart, because `rate()` over a
+  single sample reads zero; the success-rate rule now needs 5 runs in the window
+- A judge reply that omitted `confidence` was treated as certain; it now parses as 0.0 and is refused
 
 ### Changed
 - Docs moved into `docs/`, skill into `.claude/skills/`, matching the layout in `CLAUDE.md`
+- Demo runbook Q&A covers metamorphic testing, verdict guardrails, cost, and the invariant ceiling
+- Closing line claims the maintenance instrument rather than asserting the 70–80% figure
+- Fixtures rebuilt against the real Amadeus v2 / v3 schemas; taxes now sit under
+  `travelerPricings[].price.taxes[]` and the cosmetic rename moved to `price.grandTotal` (D11)
 
 ---
 

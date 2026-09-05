@@ -11,9 +11,13 @@ params:
   adults: 1
   currencyCode: EUR
   max: 5
+plausible_total:          # EUR, a return BLR-FRA economy fare
+  min: 150
+  max: 4000
 assertions:
   - offers_present
   - every_offer_has_total_price
   - currency_is_iso4217
   - price_components_sum
   - itinerary_segments_present
+  - price_within_plausible_range

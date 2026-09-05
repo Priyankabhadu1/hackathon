@@ -8,6 +8,19 @@ from src.assertions import load_alias_map, save_alias_map
 # Cosmetic heals. Semantic never does. A healer that repairs a meaning change turns a
 # caught defect into a green build - docs/DECISIONS.md D3.
 
+# An unsure heal is the same failure mode as a wrong one: it edits the assertion that
+# would have caught the defect. Below this floor we leave the probe red and let a human
+# look - docs/DECISIONS.md D10.
+CONFIDENCE_FLOOR = 0.7
+
+
+def _confidence(verdict: Dict[str, Any]) -> float:
+    """A judgment that reports no confidence is not a confident judgment."""
+    try:
+        return float(verdict.get("confidence"))
+    except (TypeError, ValueError):
+        return 0.0
+
 
 def _logical_for(alias_map: Dict[str, List[str]], old_path: str) -> Optional[str]:
     """Find the intent whose path moved. Suffix match, because the judge reports an
@@ -41,6 +54,18 @@ def apply(probe: str, verdict: Dict[str, Any]) -> Tuple[str, str]:
 
     if classification != "cosmetic" or not heal:
         return "none", "no heal proposed"
+
+    confidence = _confidence(verdict)
+    if confidence < CONFIDENCE_FLOOR:
+        justification = (
+            f"refused: cosmetic call carried confidence {confidence}, below the {CONFIDENCE_FLOOR} "
+            f"floor - {verdict['rationale']}"
+        )
+        metrics.self_heal_total.labels(probe=probe, outcome="refused_low_confidence").inc()
+        logs.emit("heal", probe=probe, outcome="refused_low_confidence", old_path=heal["old_path"],
+                  new_path=heal["new_path"], justification=justification,
+                  classification=classification, confidence=confidence)
+        return "refused", justification
 
     alias_map = load_alias_map()
     logical = _logical_for(alias_map, heal["old_path"])

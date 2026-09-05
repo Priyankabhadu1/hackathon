@@ -6,13 +6,16 @@ cd "$(dirname "$0")/.."
 
 variant="${1:-}"
 case "$variant" in
-  baseline|cosmetic|semantic|semantic_cold) ;;
+  baseline|cosmetic|semantic|semantic_cold|validation_swallowed|minor_units|minor_units_consistent) ;;
   *)
-    echo "usage: $0 [baseline|cosmetic|semantic|semantic_cold]" >&2
+    echo "usage: $0 [baseline|cosmetic|semantic|semantic_cold|validation_swallowed|minor_units|minor_units_consistent]" >&2
     echo "  baseline  restore the original response and the original alias map" >&2
-    echo "  cosmetic  price.total renamed to price.grandTotal - should heal" >&2
-    echo "  semantic  after cosmetic: grandTotal stops including tax - must NOT heal" >&2
+    echo "  cosmetic  price.grandTotal renamed to price.totalPayable - should heal" >&2
+    echo "  semantic  after cosmetic: totalPayable stops including tax - must NOT heal" >&2
     echo "  semantic_cold  same meaning change from an unhealed baseline" >&2
+    echo "  validation_swallowed  invalid_input answered 200 with an empty list instead of 400" >&2
+    echo "  minor_units    hotel total switches to cents - the sum invariant catches it" >&2
+    echo "  minor_units_consistent  base, taxes and total all in cents - only the range catches it" >&2
     exit 1 ;;
 esac
 

@@ -1,6 +1,9 @@
 {
   "meta": {
-    "count": 2
+    "count": 2,
+    "links": {
+      "self": "https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=BLR&destinationLocationCode=JFK&departureDate=2026-11-12&adults=1&currencyCode=EUR&max=5"
+    }
   },
   "data": [
     {
@@ -9,74 +12,80 @@
       "source": "GDS",
       "instantTicketingRequired": false,
       "nonHomogeneous": false,
-      "oneWay": false,
-      "lastTicketingDate": "2026-11-01",
-      "numberOfBookableSeats": 7,
+      "oneWay": true,
+      "lastTicketingDate": "2026-10-29",
+      "lastTicketingDateTime": "2026-10-29",
+      "numberOfBookableSeats": 5,
       "itineraries": [
         {
-          "duration": "PT19H05M",
+          "duration": "PT19H50M",
           "segments": [
             {
               "departure": {
                 "iataCode": "BLR",
-                "at": "2026-11-12T03:05:00"
+                "terminal": "2",
+                "at": "2026-11-12T01:20:00"
               },
               "arrival": {
-                "iataCode": "FRA",
-                "at": "2026-11-12T08:35:00"
+                "iataCode": "DOH",
+                "terminal": null,
+                "at": "2026-11-12T03:15:00"
               },
-              "carrierCode": "LH",
-              "number": "755",
+              "carrierCode": "QR",
+              "number": "579",
               "aircraft": {
-                "code": "359"
+                "code": "788"
               },
               "operating": {
-                "carrierCode": "LH"
+                "carrierCode": "QR"
               },
-              "duration": "PT10H30M",
+              "duration": "PT4H25M",
               "id": "1",
-              "numberOfStops": 0
+              "numberOfStops": 0,
+              "blacklistedInEU": false
             },
             {
               "departure": {
-                "iataCode": "FRA",
-                "at": "2026-11-12T10:40:00"
+                "iataCode": "DOH",
+                "terminal": null,
+                "at": "2026-11-12T07:55:00"
               },
               "arrival": {
                 "iataCode": "JFK",
-                "at": "2026-11-12T13:10:00"
+                "terminal": "8",
+                "at": "2026-11-12T14:10:00"
               },
-              "carrierCode": "LH",
-              "number": "400",
+              "carrierCode": "QR",
+              "number": "701",
               "aircraft": {
-                "code": "359"
+                "code": "77W"
               },
               "operating": {
-                "carrierCode": "LH"
+                "carrierCode": "QR"
               },
-              "duration": "PT8H30M",
+              "duration": "PT14H15M",
               "id": "2",
-              "numberOfStops": 0
+              "numberOfStops": 0,
+              "blacklistedInEU": false
             }
           ]
         }
       ],
       "price": {
         "currency": "EUR",
-        "total": "938.40",
-        "base": "742.00",
-        "taxes": [
-          {
-            "amount": "196.40",
-            "code": "TOTALTAX"
-          }
-        ],
+        "total": "795.50",
+        "base": "612.00",
         "fees": [
           {
             "amount": "0.00",
             "type": "SUPPLIER"
+          },
+          {
+            "amount": "0.00",
+            "type": "TICKETING"
           }
-        ]
+        ],
+        "grandTotal": "795.50"
       },
       "pricingOptions": {
         "fareType": [
@@ -85,7 +94,50 @@
         "includedCheckedBagsOnly": true
       },
       "validatingAirlineCodes": [
-        "LH"
+        "QR"
+      ],
+      "travelerPricings": [
+        {
+          "travelerId": "1",
+          "fareOption": "STANDARD",
+          "travelerType": "ADULT",
+          "price": {
+            "currency": "EUR",
+            "total": "795.50",
+            "base": "612.00",
+            "taxes": [
+              {
+                "amount": "144.60",
+                "code": "YQ"
+              },
+              {
+                "amount": "38.90",
+                "code": "US"
+              }
+            ],
+            "refundableTaxes": "38.90"
+          },
+          "fareDetailsBySegment": [
+            {
+              "segmentId": "1",
+              "cabin": "ECONOMY",
+              "fareBasis": "NLYOIN",
+              "class": "N",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            },
+            {
+              "segmentId": "2",
+              "cabin": "ECONOMY",
+              "fareBasis": "NLYOIN",
+              "class": "N",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            }
+          ]
+        }
       ]
     },
     {
@@ -94,74 +146,80 @@
       "source": "GDS",
       "instantTicketingRequired": false,
       "nonHomogeneous": false,
-      "oneWay": false,
-      "lastTicketingDate": "2026-11-01",
+      "oneWay": true,
+      "lastTicketingDate": "2026-10-29",
+      "lastTicketingDateTime": "2026-10-29",
       "numberOfBookableSeats": 9,
       "itineraries": [
         {
-          "duration": "PT21H30M",
+          "duration": "PT22H35M",
           "segments": [
             {
               "departure": {
                 "iataCode": "BLR",
-                "at": "2026-11-12T01:15:00"
+                "terminal": "2",
+                "at": "2026-11-12T09:05:00"
               },
               "arrival": {
-                "iataCode": "DXB",
-                "at": "2026-11-12T03:50:00"
+                "iataCode": "IST",
+                "terminal": null,
+                "at": "2026-11-12T14:35:00"
               },
-              "carrierCode": "EK",
-              "number": "569",
+              "carrierCode": "TK",
+              "number": "717",
               "aircraft": {
-                "code": "359"
+                "code": "333"
               },
               "operating": {
-                "carrierCode": "EK"
+                "carrierCode": "TK"
               },
-              "duration": "PT4H05M",
+              "duration": "PT7H30M",
               "id": "1",
-              "numberOfStops": 0
+              "numberOfStops": 0,
+              "blacklistedInEU": false
             },
             {
               "departure": {
-                "iataCode": "DXB",
-                "at": "2026-11-12T08:30:00"
+                "iataCode": "IST",
+                "terminal": null,
+                "at": "2026-11-12T18:20:00"
               },
               "arrival": {
                 "iataCode": "JFK",
-                "at": "2026-11-12T14:35:00"
+                "terminal": "1",
+                "at": "2026-11-12T22:40:00"
               },
-              "carrierCode": "EK",
-              "number": "201",
+              "carrierCode": "TK",
+              "number": "3",
               "aircraft": {
-                "code": "359"
+                "code": "351"
               },
               "operating": {
-                "carrierCode": "EK"
+                "carrierCode": "TK"
               },
-              "duration": "PT14H05M",
+              "duration": "PT11H20M",
               "id": "2",
-              "numberOfStops": 0
+              "numberOfStops": 0,
+              "blacklistedInEU": false
             }
           ]
         }
       ],
       "price": {
         "currency": "EUR",
-        "total": "872.20",
-        "base": "688.50",
-        "taxes": [
-          {
-            "amount": "174.20",
-            "code": "TOTALTAX"
-          }
-        ],
+        "total": "746.25",
+        "base": "574.00",
         "fees": [
           {
-            "amount": "9.50",
+            "amount": "0.00",
             "type": "SUPPLIER"
+          },
+          {
+            "amount": "0.00",
+            "type": "TICKETING"
           }
-        ]
+        ],
+        "grandTotal": "746.25"
       },
       "pricingOptions": {
         "fareType": [
@@ -170,8 +228,84 @@
         "includedCheckedBagsOnly": true
       },
       "validatingAirlineCodes": [
-        "EK"
+        "TK"
+      ],
+      "travelerPricings": [
+        {
+          "travelerId": "1",
+          "fareOption": "STANDARD",
+          "travelerType": "ADULT",
+          "price": {
+            "currency": "EUR",
+            "total": "746.25",
+            "base": "574.00",
+            "taxes": [
+              {
+                "amount": "131.20",
+                "code": "YQ"
+              },
+              {
+                "amount": "41.05",
+                "code": "US"
+              }
+            ],
+            "refundableTaxes": "41.05"
+          },
+          "fareDetailsBySegment": [
+            {
+              "segmentId": "1",
+              "cabin": "ECONOMY",
+              "fareBasis": "VLYOIN",
+              "class": "V",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            },
+            {
+              "segmentId": "2",
+              "cabin": "ECONOMY",
+              "fareBasis": "VLYOIN",
+              "class": "V",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            }
+          ]
+        }
       ]
     }
-  ]
+  ],
+  "dictionaries": {
+    "locations": {
+      "BLR": {
+        "cityCode": "BLR",
+        "countryCode": "IN"
+      },
+      "DOH": {
+        "cityCode": "DOH",
+        "countryCode": "QA"
+      },
+      "IST": {
+        "cityCode": "IST",
+        "countryCode": "TR"
+      },
+      "JFK": {
+        "cityCode": "NYC",
+        "countryCode": "US"
+      }
+    },
+    "aircraft": {
+      "788": "BOEING 787-8",
+      "77W": "BOEING 777-300ER",
+      "333": "AIRBUS A330-300",
+      "351": "AIRBUS A350-1000"
+    },
+    "currencies": {
+      "EUR": "EURO"
+    },
+    "carriers": {
+      "QR": "QATAR AIRWAYS",
+      "TK": "TURKISH AIRLINES"
+    }
+  }
 }

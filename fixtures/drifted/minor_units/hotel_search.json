@@ -41,7 +41,7 @@
           "price": {
             "currency": "EUR",
             "base": "180.00",
-            "total": "201.60",
+            "total": "20160",
             "taxes": [
               {
                 "code": "GOODS_AND_SERVICES_TAX",
@@ -120,7 +120,7 @@
           "price": {
             "currency": "EUR",
             "base": "242.00",
-            "total": "271.04",
+            "total": "27104",
             "taxes": [
               {
                 "code": "GOODS_AND_SERVICES_TAX",

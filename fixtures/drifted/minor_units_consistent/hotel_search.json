@@ -40,27 +40,27 @@
           },
           "price": {
             "currency": "EUR",
-            "base": "180.00",
-            "total": "201.60",
+            "base": "18000",
+            "total": "20160",
             "taxes": [
               {
                 "code": "GOODS_AND_SERVICES_TAX",
                 "pricingFrequency": "PER_STAY",
                 "pricingMode": "INCLUDED",
-                "amount": "21.60",
+                "amount": "2160",
                 "currency": "EUR",
                 "included": true
               }
             ],
             "variations": {
               "average": {
-                "base": "90.00"
+                "base": "9000"
               },
               "changes": [
                 {
                   "startDate": "2026-11-12",
                   "endDate": "2026-11-14",
-                  "base": "90.00"
+                  "base": "9000"
                 }
               ]
             }
@@ -119,27 +119,27 @@
           },
           "price": {
             "currency": "EUR",
-            "base": "242.00",
-            "total": "271.04",
+            "base": "24200",
+            "total": "27104",
             "taxes": [
               {
                 "code": "GOODS_AND_SERVICES_TAX",
                 "pricingFrequency": "PER_STAY",
                 "pricingMode": "INCLUDED",
-                "amount": "29.04",
+                "amount": "2904",
                 "currency": "EUR",
                 "included": true
               }
             ],
             "variations": {
               "average": {
-                "base": "121.00"
+                "base": "12100"
               },
               "changes": [
                 {
                   "startDate": "2026-11-12",
                   "endDate": "2026-11-14",
-                  "base": "121.00"
+                  "base": "12100"
                 }
               ]
             }

@@ -16,7 +16,8 @@ Full context: `docs/PROBLEM_STATEMENT.md`. Design: `docs/ARCHITECTURE.md`. Build
 Every decision is subordinate to shipping a working demo in four hours. When in doubt, ship the
 narrower thing. Specifically:
 
-- **No custom frontend.** Grafana is the UI. If you find yourself writing HTML, stop.
+- **No second dashboard.** Grafana owns every time series. `ui/` renders pipeline state only,
+  computes nothing, and is the one exception — see D12 before adding to it.
 - **No abstraction for a second backend.** There is one system under test: Amadeus MCP.
 - **No test framework for the test framework.** A `pytest` smoke test on the fingerprinter is the ceiling.
 - **No config system.** Environment variables and two YAML files.
@@ -46,6 +47,7 @@ infra/         docker-compose + Prometheus/Loki/Promtail/Grafana provisioning
 src/           runner · fingerprint · judge · heal · assertions · verdict · metrics
 src/probes/    probe definitions (YAML)
 fixtures/      last-known-good responses, alias_map.json, seeded drift fixtures
+ui/            local console — one page, one JSON endpoint, reads Prometheus and Loki (D12)
 ```
 
 ## Conventions

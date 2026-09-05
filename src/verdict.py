@@ -6,18 +6,22 @@ from typing import Any, Dict, List
 
 import httpx
 
-from src import config, logs, metrics
+from src import config, llm, logs, metrics
 
 # Release Decision. The narrative comes from the model; the decision does not.
 # Hard rules win, always - a HOLD cannot be talked out of by a language model.
 
 WINDOW = "15m"
 
+# Below this many runs in the window, the success-rate signal is noise, not evidence.
+MIN_RUNS_FOR_RATE = 5
+
 _QUERIES = {
     "success_rate": f'sum by (workflow) (rate(ds_probe_runs_total{{result="pass"}}[{WINDOW}])) '
                     f"/ clamp_min(sum by (workflow) (rate(ds_probe_runs_total[{WINDOW}])), 0.0001)",
     "drift": "max by (probe, classification) (ds_drift_score > 0)",
     "failing_probes": "ds_probe_success == 0",
+    "runs": f"sum by (workflow) (increase(ds_probe_runs_total[{WINDOW}]))",
     "heals": f"sum by (outcome) (increase(ds_self_heal_total[{WINDOW}]))",
     "manual_edits": f"increase(ds_manual_edits_total[{WINDOW}])",
 }
@@ -94,12 +98,20 @@ def decide(evidence: Dict[str, Any]) -> Dict[str, Any]:
         labels = series.get("metric", {})
         reasons.append(f"workflow {labels.get('workflow')} failing on probe {labels.get('probe')}")
 
+    # rate() needs two samples before it means anything, and a low-risk probe only runs
+    # every fourth cycle. Without this floor a fresh Prometheus produces a HOLD for a
+    # workflow that has simply not run enough times yet - a gate that cries wolf on every
+    # restart is a gate people learn to ignore.
+    runs = {s.get("metric", {}).get("workflow"): float(s.get("value", [0, "0"])[1])
+            for s in evidence.get("runs", [])}
     for series in evidence.get("success_rate", []):
+        workflow = series.get("metric", {}).get("workflow")
+        if runs.get(workflow, 0) < MIN_RUNS_FOR_RATE:
+            continue
         value = float(series.get("value", [0, "1"])[1])
         if value < 0.95:
             reasons.append(
-                f"{series.get('metric', {}).get('workflow')} success rate "
-                f"{round(value * 100, 1)}% over {WINDOW}"
+                f"{workflow} success rate {round(value * 100, 1)}% over {WINDOW}"
             )
 
     return {"decision": "HOLD" if reasons else "PASS", "blocking_reasons": reasons}
@@ -116,7 +128,7 @@ No marketing adjectives. No bullet points. Reply with JSON only:
 
 
 def narrate(decision: Dict[str, Any], evidence: Dict[str, Any]) -> Dict[str, Any]:
-    if not config.ANTHROPIC_API_KEY:
+    if not llm.available():
         return {
             "reasoning": (
                 f"{decision['decision']} based on {len(decision['blocking_reasons'])} blocking "
@@ -126,8 +138,6 @@ def narrate(decision: Dict[str, Any], evidence: Dict[str, Any]) -> Dict[str, Any
             ),
             "evidence": decision["blocking_reasons"][:5],
         }
-
-    import anthropic
 
     payload = json.dumps(
         {
@@ -140,12 +150,7 @@ def narrate(decision: Dict[str, Any], evidence: Dict[str, Any]) -> Dict[str, Any
         indent=2,
     )
     try:
-        client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model=config.ANTHROPIC_MODEL, max_tokens=600, system=_SYSTEM,
-            messages=[{"role": "user", "content": payload}],
-        )
-        text = "".join(block.text for block in message.content if block.type == "text")
+        text = llm.complete(_SYSTEM, payload, max_tokens=600)
         start, end = text.find("{"), text.rfind("}")
         parsed = json.loads(text[start : end + 1])
         return {
